@@ -1,0 +1,22 @@
+[tasks]
+bmc
+prove
+cover
+
+[options]
+bmc: mode bmc
+bmc: depth 20
+prove: mode prove
+prove: depth 20
+cover: mode cover
+cover: depth 20
+
+[engines]
+smtbmc boolector
+
+[script]
+read_verilog -sv -formal -D FORMAL skid_buffer.sv
+prep -top skid_buffer
+
+[files]
+../../rtl/skid_buffer.sv
