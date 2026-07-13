@@ -1,6 +1,5 @@
 module uart_fifo
 #(
-    parameter WIDTH = 8,
     parameter DEPTH = 16,
     localparam ADDR_W = $clog2(DEPTH)
 )(
@@ -8,14 +7,14 @@ module uart_fifo
     input logic rst_n,
 
     input logic wr_en,
-    input logic [WIDTH-1:0] wr_data,
+    input logic [7:0] wr_data,
     input logic rd_en,
-    output logic [WIDTH-1:0] rd_data,
+    output logic [7:0] rd_data,
     output logic full,
     output logic empty
 );
 
-    logic [WIDTH-1:0] fifo [DEPTH];
+    logic [7:0] fifo [DEPTH];
 
     logic [ADDR_W:0] wr_ptr;
     logic [ADDR_W:0] wr_ptr_next;
