@@ -1,17 +1,40 @@
-module uart_rx (
-    input logic clk, rst_n, rx_in,
-    input logic [15:0] baud_div,
-    input logic parity_en,
-    input logic parity_mode,  // 0 = even, 1 = odd
-    input logic stop_bits,    // 0 = one stop bit, 1 = two stop bits
-    output logic [7:0] rx_data,
-    output logic rx_valid,
-    output logic rx_error,
-    output logic rx_perr
+module uart_rx
+(
+    // ========================================================
+    // PORTS
+    // ========================================================
+
+    // System
+    input  logic                    clk,
+    input  logic                    rst_n,
+
+    // UART Physical Interface
+    input  logic                    rx_in,
+
+    // Configuration
+    input  logic [15:0]             baud_div,
+    input  logic                    parity_en,
+    input  logic                    parity_mode,  // 0 = even, 1 = odd
+    input  logic                    stop_bits,    // 0 = one stop bit, 1 = two stop bits
+
+    // Receive Interface
+    output logic [7:0]              rx_data,
+    output logic                    rx_valid,
+    output logic                    rx_error,
+    output logic                    rx_perr
 );
 
-    localparam DATA_BITS = 8;
+    // ========================================================
+    // LOCAL PARAMETERS
+    // ========================================================
+
+    localparam DATA_BITS     = 8;
     localparam BIT_COUNTER_W = $clog2(DATA_BITS);
+
+
+    // ========================================================
+    // FSM STATES TYPEDEF
+    // ========================================================
 
     typedef enum logic [2:0] {
         IDLE,
@@ -22,132 +45,204 @@ module uart_rx (
         RECOVERY
     } uart_state_t;
 
-    uart_state_t CS, NS;
-    logic enable, os_tick;
-    logic [3:0] os_counter; // 16x oversampling always
+
+    // ========================================================
+    // INTERNAL SIGNALS & REGISTERS
+    // ========================================================
+
+    // FSM States
+    uart_state_t CS;
+    uart_state_t NS;
+
+    // Clock Enable & Tick
+    logic        enable;
+    logic        os_tick;
+    logic [15:0] os_div;
+
+    // Counters
+    logic [3:0]               os_counter;
     logic [BIT_COUNTER_W-1:0] bit_counter;
 
-    logic clear_counters, inc_bit_counter, load_shift_rx_data, update_framing, update_parity;
+    // Control Strobes
+    logic clear_counters;
+    logic inc_bit_counter;
+    logic load_shift_rx_data;
+    logic update_framing;
+    logic update_parity;
 
-    logic data_done, stop_done;
-    assign data_done = (bit_counter == DATA_BITS - 1);
-    assign stop_done = (bit_counter == BIT_COUNTER_W'(stop_bits));
-
+    // Status & Handshake Signals
+    logic data_done;
+    logic stop_done;
     logic rx_parity_error;
     logic prev_rx_in;
 
-    logic [15:0] os_div;
-    assign os_div = baud_div >> 4; // 16x oversampling
 
+    // ========================================================
+    // DATAPATH ASSIGNMENTS
+    // ========================================================
+
+    assign data_done = (bit_counter == BIT_COUNTER_W'(DATA_BITS - 1));
+    assign stop_done = (bit_counter == BIT_COUNTER_W'(stop_bits));
+    assign os_div    = baud_div >> 4;
+
+
+    // ========================================================
+    // BAUD GENERATION
+    // ========================================================
+
+    // Instantiate baud generator for oversampling
     baud_gen gen (
-        .clk(clk),
-        .rst_n(rst_n),
-        .enable(enable),
-        .div(os_div),
-        .baud_tick(os_tick)
+        .clk       (clk),
+        .rst_n     (rst_n),
+        .enable    (enable),
+        .div       (os_div),
+        .baud_tick (os_tick)
     );
 
+
+    // ========================================================
+    // FSM
+    // ========================================================
+
+    // Sequential state transition
     always_ff @(posedge clk) begin
         if (!rst_n) CS <= IDLE;
-        else CS <= NS;
+        else        CS <= NS;
     end
 
+    // Next-state transition combinational logic
     always_comb begin
         NS = CS;
+
         case (CS)
-            IDLE: if (!rx_in && prev_rx_in) NS = START;
-            START: if (os_tick && os_counter == 8) begin
-                if (rx_in == 0) NS = DATA;
-                else NS = IDLE;
+            IDLE: begin
+                if (!rx_in && prev_rx_in) NS = START;
             end
-            DATA: if (os_tick && os_counter == 15 && data_done) begin
-                if (parity_en) NS = PARITY;
-                else NS = STOP;
+
+            START: begin
+                if (os_tick && (os_counter == 4'd8)) begin
+                    if (rx_in == 1'b0) NS = DATA;
+                    else               NS = IDLE;
+                end
             end
-            PARITY: if (os_tick && os_counter == 15) NS = STOP;
-            STOP: if (os_tick && os_counter == 15 && stop_done) begin
-                if (rx_in && !rx_parity_error) NS = IDLE;
-                else NS = RECOVERY;
+
+            DATA: begin
+                if (os_tick && (os_counter == 4'd15) && data_done) begin
+                    if (parity_en) NS = PARITY;
+                    else           NS = STOP;
+                end
             end
-            RECOVERY: if (rx_in) NS = IDLE;
+
+            PARITY: begin
+                if (os_tick && (os_counter == 4'd15)) NS = STOP;
+            end
+
+            STOP: begin
+                if (os_tick && (os_counter == 4'd15) && stop_done) begin
+                    if (rx_in && !rx_parity_error) NS = IDLE;
+                    else                           NS = RECOVERY;
+                end
+            end
+
+            RECOVERY: begin
+                if (rx_in) NS = IDLE;
+            end
+
             default: NS = CS;
         endcase
     end
 
+    // Combinational output signals and control strobes
     always_comb begin
-        enable = 1;
-        clear_counters = 0;
-        inc_bit_counter = 0;
-        load_shift_rx_data = 0;
-        update_framing = 0;
-        update_parity = 0;
+        enable             = 1'b1;
+        clear_counters     = 1'b0;
+        inc_bit_counter    = 1'b0;
+        load_shift_rx_data = 1'b0;
+        update_framing     = 1'b0;
+        update_parity      = 1'b0;
 
         case (CS)
-            IDLE: ;
-            START: ;
-            DATA: if (os_tick && os_counter == 15) begin
-                    load_shift_rx_data = 1;
-                    inc_bit_counter = 1;
+            IDLE:     ;
+            START:    ;
+
+            DATA: begin
+                if (os_tick && (os_counter == 4'd15)) begin
+                    load_shift_rx_data = 1'b1;
+                    inc_bit_counter    = 1'b1;
+                end
             end
-            PARITY: if (os_tick && os_counter == 15) begin
-                update_parity = 1;
+
+            PARITY: begin
+                if (os_tick && (os_counter == 4'd15)) begin
+                    update_parity = 1'b1;
+                end
             end
-            STOP: if (os_tick && os_counter == 15) begin
-                if (stop_done) update_framing = 1;
-                inc_bit_counter = 1;
+
+            STOP: begin
+                if (os_tick && (os_counter == 4'd15)) begin
+                    if (stop_done) update_framing = 1'b1;
+                    inc_bit_counter = 1'b1;
+                end
             end
-            RECOVERY: enable = 0;
-            default: ;
+
+            RECOVERY: begin
+                enable = 1'b0;
+            end
+
+            default:  ;
         endcase
 
-        if (CS != NS) clear_counters = 1; // clear both os_counter and bit_counter
+        if (CS != NS) clear_counters = 1'b1;
     end
 
+
+    // ========================================================
+    // DATAPATH AND FLAG UPDATES
+    // ========================================================
+
+    // Sequential register updates for datapath and status flags
     always_ff @(posedge clk) begin
         if (!rst_n) begin
-            os_counter <= '0;
-            bit_counter <= '0;
-            rx_data <= '0;
-            rx_valid <= 0;
-            rx_error <= 0;
-            rx_perr <= 0;
-            rx_parity_error <= 0;
-            prev_rx_in <= 0;
-        end
-        else begin
-            rx_valid <= 0;
-            rx_error <= 0;
-            rx_perr <= 0;
+            os_counter      <= '0;
+            bit_counter     <= '0;
+            rx_data         <= '0;
+            rx_valid        <= 1'b0;
+            rx_error        <= 1'b0;
+            rx_perr         <= 1'b0;
+            rx_parity_error <= 1'b0;
+            prev_rx_in      <= 1'b0;
+        end else begin
+            rx_valid   <= 1'b0;
+            rx_error   <= 1'b0;
+            rx_perr    <= 1'b0;
             prev_rx_in <= rx_in;
-            // ========= COUNTERS ============= //
 
+            // Update oversampling and bit counters
             if (clear_counters) begin
-                os_counter <= '0;
+                os_counter  <= '0;
                 bit_counter <= '0;
-            end
-            else begin
-                if (os_tick) os_counter <= os_counter + 1;
-                if (inc_bit_counter) bit_counter <= bit_counter + 1;
+            end else begin
+                if (os_tick)         os_counter  <= os_counter + 4'd1;
+                if (inc_bit_counter) bit_counter <= bit_counter + 1'b1;
             end
 
-            // ========= SHIFT REGISTER ============= //
-
+            // Load received data into shift register
             if (load_shift_rx_data) begin
                 rx_data <= {rx_in, rx_data[DATA_BITS-1:1]};
             end
 
-            // ========= UPDATE FLAGS ============= //
-
+            // Update parity calculation
             if (update_parity) begin
                 if (!parity_mode) rx_parity_error <= ^rx_data ^ rx_in;
-                else rx_parity_error <= ~(^rx_data ^ rx_in);
+                else              rx_parity_error <= ~(^rx_data ^ rx_in);
             end
 
+            // Update framing status and outputs
             if (update_framing) begin
-                if (rx_in == 1 && rx_parity_error == 0) rx_valid <= 1;
-                else rx_error <= 1;
-                rx_perr <= rx_parity_error;
-                rx_parity_error <= 0;
+                if ((rx_in == 1'b1) && (rx_parity_error == 1'b0)) rx_valid <= 1'b1;
+                else                                              rx_error <= 1'b1;
+                rx_perr         <= rx_parity_error;
+                rx_parity_error <= 1'b0;
             end
         end
     end

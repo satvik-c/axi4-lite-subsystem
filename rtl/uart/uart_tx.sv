@@ -1,18 +1,39 @@
-module uart_tx (
-    input logic clk,
-    input logic rst_n,
-    input logic tx_start,
-    input logic [7:0] tx_data,
-    input logic [15:0] baud_div,
-    input logic parity_en,
-    input logic parity_mode,  // 0 = even, 1 = odd
-    input logic stop_bits,    // 0 = one stop bit, 1 = two stop bits
-    output logic tx_busy,
-    output logic tx_out
+module uart_tx
+(
+    // ========================================================
+    // PORTS
+    // ========================================================
+
+    // System
+    input  logic                    clk,
+    input  logic                    rst_n,
+
+    // Transmit Control Interface
+    input  logic                    tx_start,
+    input  logic [7:0]              tx_data,
+
+    // Configuration
+    input  logic [15:0]             baud_div,
+    input  logic                    parity_en,
+    input  logic                    parity_mode,  // 0 = even, 1 = odd
+    input  logic                    stop_bits,    // 0 = one stop bit, 1 = two stop bits
+
+    // Physical Output Interface
+    output logic                    tx_busy,
+    output logic                    tx_out
 );
 
+    // ========================================================
+    // LOCAL PARAMETERS
+    // ========================================================
+
     localparam DATA_BITS = 8;
-    localparam CNT_W = $clog2(DATA_BITS);
+    localparam CNT_W     = $clog2(DATA_BITS);
+
+
+    // ========================================================
+    // FSM STATES TYPEDEF
+    // ========================================================
 
     typedef enum logic [2:0] {
         IDLE,
@@ -22,111 +43,171 @@ module uart_tx (
         STOP
     } uart_state_t;
 
-// ====================== COUNTER/FLAGS =========================================== //
 
+    // ========================================================
+    // INTERNAL SIGNALS & REGISTERS
+    // ========================================================
+
+    // FSM States
+    uart_state_t CS;
+    uart_state_t NS;
+
+    // Counters
     logic [CNT_W-1:0] counter;
 
-    logic data_done;
-    assign data_done = (counter == CNT_W'(DATA_BITS - 1));
+    // Baud Tick Signals
+    logic baud_tick;
+    logic enable;
 
-    logic stop_done;
-    assign stop_done = (counter == CNT_W'(stop_bits));
-
-// ================================================================================ //
-    logic baud_tick, enable;
+    // Shift Register and Parity
     logic [DATA_BITS-1:0] shift_register;
-    logic parity_bit;
+    logic                 parity_bit;
 
-    logic load_data, shift_data;
-    logic clear_counter, inc_counter;
+    // Control Strobes
+    logic load_data;
+    logic shift_data;
+    logic clear_counter;
+    logic inc_counter;
     logic calculate_parity;
 
+    // Status Signals
+    logic data_done;
+    logic stop_done;
+
+
+    // ========================================================
+    // DATAPATH ASSIGNMENTS
+    // ========================================================
+
+    assign data_done = (counter == CNT_W'(DATA_BITS - 1));
+    assign stop_done = (counter == CNT_W'(stop_bits));
+
+
+    // ========================================================
+    // BAUD GENERATION
+    // ========================================================
+
+    // Instantiate baud generator for tx timing
     baud_gen gen (
-        .clk(clk),
-        .rst_n(rst_n),
-        .enable(enable),
-        .div(baud_div),
-        .baud_tick(baud_tick)
+        .clk       (clk),
+        .rst_n     (rst_n),
+        .enable    (enable),
+        .div       (baud_div),
+        .baud_tick (baud_tick)
     );
 
-// ========================= FSM =================================== //
 
-    uart_state_t CS, NS;
+    // ========================================================
+    // FSM
+    // ========================================================
 
+    // Sequential state transition
     always_ff @(posedge clk) begin
         if (!rst_n) CS <= IDLE;
-        else CS <= NS;
+        else        CS <= NS;
     end
 
+    // Next-state transition combinational logic
     always_comb begin
         NS = CS;
+
         case (CS)
-            IDLE: if (tx_start) NS = START;
-            START: if (baud_tick) NS = DATA;
-            DATA: if (baud_tick && data_done) begin
-                if (parity_en) NS = PARITY;
-                else NS = STOP;
+            IDLE: begin
+                if (tx_start) NS = START;
             end
-            PARITY: if (baud_tick) NS = STOP;
-            STOP: if (baud_tick && stop_done) NS = IDLE;
+
+            START: begin
+                if (baud_tick) NS = DATA;
+            end
+
+            DATA: begin
+                if (baud_tick && data_done) begin
+                    if (parity_en) NS = PARITY;
+                    else           NS = STOP;
+                end
+            end
+
+            PARITY: begin
+                if (baud_tick) NS = STOP;
+            end
+
+            STOP: begin
+                if (baud_tick && stop_done) NS = IDLE;
+            end
+
             default: NS = CS;
         endcase
     end
 
+    // Combinational output signals and control strobes
     always_comb begin
-        tx_busy = 1;
-        enable = 1;
-        tx_out = 1;
-
-        load_data = 0;
-        shift_data = 0;
-        clear_counter = 0;
-        inc_counter = 0;
-        calculate_parity = 0;
+        tx_busy          = 1'b1;
+        enable           = 1'b1;
+        tx_out           = 1'b1;
+        load_data        = 1'b0;
+        shift_data       = 1'b0;
+        clear_counter    = 1'b0;
+        inc_counter      = 1'b0;
+        calculate_parity = 1'b0;
 
         case (CS)
             IDLE: begin
                 tx_busy = tx_start;
-                enable = 0;
-                tx_out = 1;
+                enable  = 1'b0;
+                tx_out  = 1'b1;
                 if (tx_start) begin
-                    load_data = 1; // DATAPATH
-                    calculate_parity = 1; // DATAPATH
+                    load_data        = 1'b1;
+                    calculate_parity = 1'b1;
                 end
             end
+
             START: begin
-                tx_out = 0;
+                tx_out = 1'b0;
             end
+
             DATA: begin
                 tx_out = shift_register[0];
                 if (baud_tick) begin
-                    inc_counter = 1; // DATAPATH
-                    shift_data = 1; // DATAPATH
+                    inc_counter = 1'b1;
+                    shift_data  = 1'b1;
                 end
             end
+
             PARITY: begin
                 tx_out = parity_bit;
             end
+
             STOP: begin
-                tx_out = 1;
-                if (baud_tick) inc_counter = 1; // DATAPATH
+                tx_out = 1'b1;
+                if (baud_tick) begin
+                    inc_counter = 1'b1;
+                end
             end
-            default: tx_out = 1;
+
+            default: begin
+                tx_out = 1'b1;
+            end
         endcase
 
-        if (CS != NS) clear_counter = 1; // DATAPATH
+        if (CS != NS) clear_counter = 1'b1;
     end
 
-// ======================= DATAPATH ============================== //
 
+    // ========================================================
+    // DATAPATH REGISTER UPDATES
+    // ========================================================
+
+    // Sequential datapath register updates
     always_ff @(posedge clk) begin
         if (!rst_n || clear_counter) counter <= '0;
-        else if (inc_counter) counter <= counter + 1;
-        if (load_data) shift_register <= tx_data;
+        else if (inc_counter)        counter <= counter + 1'b1;
+
+        if (load_data)       shift_register <= tx_data;
         else if (shift_data) shift_register <= shift_register >> 1;
+
         if (calculate_parity) begin
             if (!parity_mode) parity_bit <= ^tx_data;
-            else parity_bit <= ~^tx_data;
+            else              parity_bit <= ~^tx_data;
         end
     end
 

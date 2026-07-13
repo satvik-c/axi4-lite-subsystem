@@ -11,8 +11,8 @@ package regs_pkg;
     localparam int SPI_CTRL_EN    = 0;
     localparam int SPI_CTRL_START = 1;
 
-    localparam int SPI_STATUS_BUSY     = 0;
-    localparam int SPI_STATUS_RXVALID  = 1;
+    localparam int SPI_STATUS_BUSY    = 0;
+    localparam int SPI_STATUS_RXVALID = 1;
 
     localparam int SPI_CFG_CPOL       = 0;
     localparam int SPI_CFG_CPHA       = 1;

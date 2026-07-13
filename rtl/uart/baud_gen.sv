@@ -1,20 +1,43 @@
-module baud_gen (
-    input  logic        clk,
-    input  logic        rst_n,
-    input  logic        enable,
-    input  logic [15:0] div,
-    output logic        baud_tick
+module baud_gen
+(
+    // ========================================================
+    // PORTS
+    // ========================================================
+
+    // System
+    input  logic                    clk,
+    input  logic                    rst_n,
+
+    // Controls
+    input  logic                    enable,
+    input  logic [15:0]             div,
+
+    // Outputs
+    output logic                    baud_tick
 );
 
+    // ========================================================
+    // INTERNAL SIGNALS & REGISTERS
+    // ========================================================
+
+    // Baud Generation Counter
     logic [15:0] baud_counter;
 
-    assign baud_tick = (baud_counter == div - 1'b1);
 
+    // ========================================================
+    // BAUD GENERATION LOGIC
+    // ========================================================
+
+    // Generate baud tick when counter reaches divisor
+    assign baud_tick = (baud_counter == (div - 16'd1));
+
+    // Baud rate counter update
     always_ff @(posedge clk) begin
-        if (!rst_n) baud_counter <= '0;
-        else begin
+        if (!rst_n) begin
+            baud_counter <= '0;
+        end else begin
             if (baud_tick || !enable) baud_counter <= '0;
-            else baud_counter <= baud_counter + 1'b1;
+            else                      baud_counter <= baud_counter + 1'b1;
         end
     end
 
