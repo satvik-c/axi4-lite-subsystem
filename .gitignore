@@ -1,2 +1,7 @@
 # SymbiYosys formal run output
 dv/formal/*/
+
+# DSim compilation and run output
+dsim*/
+*.env
+*.log
