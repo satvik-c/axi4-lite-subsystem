@@ -155,7 +155,7 @@ Offsets are relative to the SPI page base (`0x000`).
 | `0x04` | `SPI_STATUS` | RO | `0x0` | `[0]` BUSY — transfer in progress. `[1]` RX_VALID — set on completion; cleared on `SPI_RXDATA` read. |
 | `0x08` | `SPI_TXDATA` | RW | `0x0` | `[7:0]` Transmit byte. |
 | `0x0C` | `SPI_RXDATA` | RO | `0x0` | `[7:0]` Received byte. Reading clears `RX_VALID`. |
-| `0x10` | `SPI_CFG` | RW | `0x0` | `[0]` CPOL. `[1]` CPHA. `[15:8]` CLK_DIV — serial clock divider. |
+| `0x10` | `SPI_CFG` | RW | `0x0` | `[0]` CPOL. `[1]` CPHA. `[31:16]` CLK_DIV — serial clock divider. |
 
 ### 7.2 I2C Master Registers
 Offsets are relative to the I2C page base (`0x100`).
@@ -175,17 +175,19 @@ Offsets are relative to the UART page base (`0x200`).
 | Offset | Register | Access | Reset | Bit Fields |
 |---|---|---|---|---|
 | `0x00` | `UART_CTRL` | RW | `0x0` | `[0]` TX_EN — enables the transmit queue to drain into the core. `[1]` RX_EN. |
-| `0x04` | `UART_STATUS` | RO | `0x0` | `[0]` TX_READY — transmit queue not full. `[1]` TX_EMPTY — queue empty and core idle. `[2]` RX_VALID — cleared on `UART_RXDATA` read. `[3]` RX_OVERRUN — sticky; cleared on `UART_RXDATA` read. |
+| `0x04` | `UART_STATUS` | RO | `0x0` | `[0]` TX_READY — transmit queue not full. `[1]` TX_EMPTY — queue empty and core idle. `[2]` RX_VALID — cleared on `UART_RXDATA` read. `[3]` RX_OVERRUN — sticky; cleared on `UART_RXDATA` read. `[4]` RX_PERR — sticky; cleared on `UART_RXDATA` read. |
 | `0x08` | `UART_TXDATA` | RW | `0x0` | `[7:0]` Transmit byte. Writing pushes into the transmit queue when it is not full. |
-| `0x0C` | `UART_RXDATA` | RO | `0x0` | `[7:0]` Received byte. Reading clears `RX_VALID` and `RX_OVERRUN`. |
-| `0x10` | `UART_CFG` | RW | `0x0` | `[15:0]` BAUD_DIV — baud rate divider. |
+| `0x0C` | `UART_RXDATA` | RO | `0x0` | `[7:0]` Received byte. Reading clears `RX_VALID`, `RX_OVERRUN`, and `RX_PERR`. |
+| `0x10` | `UART_CFG` | RW | `0x0` | `[15:0]` BAUD_DIV — baud rate divider. `[16]` PARITY_EN — 0 = disabled, 1 = enabled. `[17]` PARITY_MODE — 0 = even, 1 = odd. `[18]` STOP_BITS — 0 = one stop bit, 1 = two. |
+
+UART frame data width is fixed at 8 bits, matching `UART_TXDATA`/`UART_RXDATA`.
 
 ---
 
 ## 8. Register and Queue Side-Effects
 
 *   **Self-Clearing Triggers**: Writing to start-transfer controls triggers a transaction and immediately returns to an idle state on subsequent reads.
-*   **Read-to-Clear Flags**: Reading a receive data register automatically clears its corresponding data-valid status flags on the cycle the read transaction completes.
+*   **Read-to-Clear Flags**: Reading a receive data register automatically clears its corresponding data-valid status flags on the cycle the read transaction completes; UART's sticky `RX_OVERRUN` and `RX_PERR` clear the same way.
 *   **Write Strobe Masking**: Register writes only update bytes where the write strobe is active. Unasserted byte lanes are ignored.
 *   **Write Protection**: Attempting to write to read-only status registers leaves the registers unchanged and returns a slave error response.
 *   **Transmit FIFO Backpressure**: Writing transmit data when the transmit FIFO is full results in the byte being dropped. The write transaction still returns a success response to prevent bus lockups.

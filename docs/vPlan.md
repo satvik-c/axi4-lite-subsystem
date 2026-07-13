@@ -26,7 +26,7 @@ The scope of verification is focused on proving the correct behavior of the AXI4
 ## 2. Reference Models
 
 The testbench implements the following reference models:
-*   **Register File Reference Model**: predicts the bus-deterministic behavior of the register map — self-clearing bits, read-on-clear actions, write-strobe masking, write-to-read-only protection, and decode responses. It deliberately does **not** predict core-timed status bits (transfer `BUSY`, the *setting* of `RX_VALID`, `NACK`), which depend on serial-core timing and are validated by the Status Forwarding check (§4), not modeled here.
+*   **Register File Reference Model**: predicts the bus-deterministic behavior of the register map — self-clearing bits, read-on-clear actions, write-strobe masking, write-to-read-only protection, and decode responses. It deliberately does **not** predict core-timed status bits (transfer `BUSY`, the *setting* of `RX_VALID`, `NACK`, `RX_PERR`), which depend on serial-core timing and are validated by the Status Forwarding check (§4), not modeled here.
 *   **UART Transmit Queue Model**: tracks the exact occupancy, registered empty/full flags, the full/empty boundary bypass rules, and the registered pop latency of the UART transmit FIFO.
 *   **Peripheral Slave Models**: behavioral SPI slave (reusing the existing SPI slave model) and I2C slave (with ACK/NACK injection). The UART receive path is exercised by the active RX driver (§1) and the transmit path captured by the TX monitor (§3).
 
@@ -50,8 +50,8 @@ The scoreboard performs self-checking comparisons for every completed transactio
 3.  **Status Forwarding & Envelope Check**: Confirms that core-driven status fields read back equal the corresponding core status outputs (white-box), that `BUSY` remains asserted for the full duration of an active transfer, and that sticky flags (`NACK`, `RX_OVERRUN`) hold until their defined clear event.
 4.  **SPI Round-Trip Check**: Confirms the byte written to `SPI_TXDATA` appears on `SPI_MOSI` under the configured mode, that the byte returned on `SPI_MISO` lands in `SPI_RXDATA`, and that `RX_VALID` sets on completion and clears on read.
 5.  **I2C Round-Trip Check**: Confirms the address, direction, and data observed on the bus match `I2C_ADDR` / `I2C_CTRL.RW_N` / `I2C_TXDATA`, that a NACK from the slave sets the `NACK` flag, and that a returned byte lands in `I2C_RXDATA`.
-6.  **End-to-End UART TX Path Check**: Compares the stream of bytes observed by the UART TX monitor against the reference queue, verifying correct transmit order and that a write during a full queue is dropped unless a concurrent pop accepts it.
-7.  **UART RX Round-Trip Check**: Confirms a byte driven by the RX driver lands in `UART_RXDATA` with `RX_VALID` set, and that a second byte arriving before the first is read sets `RX_OVERRUN`.
+6.  **End-to-End UART TX Path Check**: Compares the stream of bytes observed by the UART TX monitor against the reference queue, verifying correct transmit order, that a write during a full queue is dropped unless a concurrent pop accepts it, and that the decoded parity bit and stop-bit count match `UART_CFG`.
+7.  **UART RX Round-Trip Check**: Confirms a byte driven by the RX driver lands in `UART_RXDATA` with `RX_VALID` set, that a second byte arriving before the first is read sets `RX_OVERRUN`, and that `RX_PERR` sets only on frames with incorrect parity, exercised across the supported parity and stop-bit formats.
 
 ---
 
@@ -92,6 +92,7 @@ All assertions are implemented in a separate bind file and instantiated directly
 *   **C4 [constraint]** `UART_TXDATA` writes are generated in bursts (up to 17+ bytes) to exercise FIFO occupancy limits.
 *   **C5 [constraint]** AW and W handshakes are driven with independently randomized timing, producing address-first, data-first, and concurrent arrival.
 *   **C6 [constraint]** Inter-transaction spacing is randomized across back-to-back and gapped presentation.
+*   **C7 [constraint]** The active UART RX driver generates frames across the supported parity (none/even/odd) and stop-bit (1/2) formats, including parity-error injection, with `UART_CFG` set to match — or mismatch, for injected errors — the driven format.
 
 ---
 
@@ -107,10 +108,11 @@ All assertions are implemented in a separate bind file and instantiated directly
 *   **Skid Buffer Occupancy**: Bins for empty, partial, and full states.
 *   **UART Transmit Queue Occupancy**: Bins for empty (`0`), full (`16`), and intermediate levels (`1-4`, `5-11`, `12-15`).
 *   **UART Transmit Queue Events**: Simultaneous push and pop at partial, full, and empty occupancy, write-while-full drops, and full-to-empty drain transitions.
+*   **UART Frame Format**: Parity (`none`, `even`, `odd`) × stop bits (`1`, `2`).
 *   **Peripheral Transactions**:
     *   SPI transfers across configuration parameters.
     *   I2C transactions with ACK and NACK responses.
-    *   UART transmit and receive frames.
+    *   UART transmit and receive frames, including parity-error injection (`RX_PERR`).
 
 ### Required Crosses
 *   `Register` × `Transaction Type` — reads and writes to every register.
@@ -130,6 +132,7 @@ The following must-hit set is required at 100%; overall functional coverage must
 *   Both ACK and NACK observed on I2C.
 *   SPI and UART RX round-trips exercised.
 *   At least one FIFO full-to-empty drain, simultaneous push-pop at full and empty occupancy, and write-while-full drop.
+*   All three parity modes and both stop-bit settings exercised, and at least one RX parity-error detection.
 
 ---
 
@@ -148,7 +151,7 @@ Transactions are randomized across address ranges, write data, write strobes, ar
 *   **`test_reset`**: Verifies default register states and FSM idle behavior following reset deassertion.
 *   **`test_register_access`**: Directed read/write to every register address, covering write-strobe alignment, read-only protection, and decode errors.
 *   **`test_arrival_order`**: Directed staggered AW/W traffic (address-first, data-first, concurrent) to exercise the `W_WAIT_DATA` and `W_WAIT_ADDR` states explicitly.
-*   **`test_peripheral_roundtrip`**: Directed serial round-trips — SPI across all four modes, I2C write and read with both ACK and NACK, and UART transmit and receive — validating the wrapper mapping end to end.
+*   **`test_peripheral_roundtrip`**: Directed serial round-trips — SPI across all four modes, I2C write and read with both ACK and NACK, and UART transmit and receive sweeping parity (none/even/odd) and stop bits (1/2), including parity-error injection (`RX_PERR`) — validating the wrapper mapping end to end.
 *   **`test_fifo_stress`**: Back-to-back `UART_TXDATA` bursts to fill the FIFO, verify `TX_READY` backpressure, exercise the write-while-full drop and bypass policy, and confirm the subsequent drain.
 *   **`test_random_regression`**: Multi-seed regression (multiple seeds × several thousand randomized transactions each) across all channels and pages with randomized delays and configurations.
 
