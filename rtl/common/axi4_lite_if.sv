@@ -1,4 +1,4 @@
-interface axil_if
+interface axi4_lite_if
 (
     // ========================================================
     // PORTS
