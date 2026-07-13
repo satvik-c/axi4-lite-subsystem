@@ -1,5 +1,13 @@
 module uart_tx
-(
+#(
+    // ========================================================
+    // PARAMETERS
+    // ========================================================
+
+    // Internal localparams
+    localparam DATA_BITS = 8,
+    localparam CNT_W     = $clog2(DATA_BITS)
+)(
     // ========================================================
     // PORTS
     // ========================================================
@@ -24,14 +32,6 @@ module uart_tx
 );
 
     // ========================================================
-    // LOCAL PARAMETERS
-    // ========================================================
-
-    localparam DATA_BITS = 8;
-    localparam CNT_W     = $clog2(DATA_BITS);
-
-
-    // ========================================================
     // FSM STATES TYPEDEF
     // ========================================================
 
@@ -49,8 +49,8 @@ module uart_tx
     // ========================================================
 
     // FSM States
-    uart_state_t CS;
-    uart_state_t NS;
+    uart_state_t current_state;
+    uart_state_t next_state;
 
     // Counters
     logic [CNT_W-1:0] counter;
@@ -103,39 +103,39 @@ module uart_tx
 
     // Sequential state transition
     always_ff @(posedge clk) begin
-        if (!rst_n) CS <= IDLE;
-        else        CS <= NS;
+        if (!rst_n) current_state <= IDLE;
+        else        current_state <= next_state;
     end
 
     // Next-state transition combinational logic
     always_comb begin
-        NS = CS;
+        next_state = current_state;
 
-        case (CS)
+        case (current_state)
             IDLE: begin
-                if (tx_start) NS = START;
+                if (tx_start) next_state = START;
             end
 
             START: begin
-                if (baud_tick) NS = DATA;
+                if (baud_tick) next_state = DATA;
             end
 
             DATA: begin
                 if (baud_tick && data_done) begin
-                    if (parity_en) NS = PARITY;
-                    else           NS = STOP;
+                    if (parity_en) next_state = PARITY;
+                    else           next_state = STOP;
                 end
             end
 
             PARITY: begin
-                if (baud_tick) NS = STOP;
+                if (baud_tick) next_state = STOP;
             end
 
             STOP: begin
-                if (baud_tick && stop_done) NS = IDLE;
+                if (baud_tick && stop_done) next_state = IDLE;
             end
 
-            default: NS = CS;
+            default: next_state = current_state;
         endcase
     end
 
@@ -150,7 +150,7 @@ module uart_tx
         inc_counter      = 1'b0;
         calculate_parity = 1'b0;
 
-        case (CS)
+        case (current_state)
             IDLE: begin
                 tx_busy = tx_start;
                 enable  = 1'b0;
@@ -189,7 +189,7 @@ module uart_tx
             end
         endcase
 
-        if (CS != NS) clear_counter = 1'b1;
+        if (current_state != next_state) clear_counter = 1'b1;
     end
 
 

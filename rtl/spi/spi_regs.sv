@@ -122,7 +122,7 @@ module spi_regs
             SPI_TXDATA: rdata = {24'b0, spi_txdata};
             SPI_RXDATA: rdata = {24'b0, rx_data_reg};
             SPI_CFG:    rdata = {spi_clkdiv, 14'b0, spi_cpha, spi_cpol};
-            default:     rdata = 32'b0;
+            default:    rdata = 32'b0;
         endcase
     end
 

@@ -41,8 +41,8 @@ module skid_buffer
     // ========================================================
 
     // FSM States
-    skid_state_t CS;
-    skid_state_t NS;
+    skid_state_t current_state;
+    skid_state_t next_state;
 
     // Control Signals
     logic load_down_data;
@@ -59,21 +59,21 @@ module skid_buffer
 
     // Sequential state transition
     always_ff @(posedge clk) begin
-        if (!rst_n) CS <= EMPTY;
-        else        CS <= NS;
+        if (!rst_n) current_state <= EMPTY;
+        else        current_state <= next_state;
     end
 
     // Next-state transition combinational logic
     always_comb begin
-        NS             = CS;
+        next_state     = current_state;
         load_down_data = 1'b0;
         load_skid_data = 1'b0;
         transfer_skid  = 1'b0;
 
-        case (CS)
+        case (current_state)
             EMPTY: begin
                 if (up_valid) begin
-                    NS             = BUSY;
+                    next_state     = BUSY;
                     load_down_data = 1'b1;
                 end
             end
@@ -82,22 +82,22 @@ module skid_buffer
                 if (up_valid && down_ready) begin
                     load_down_data = 1'b1;
                 end else if (!up_valid && down_ready) begin
-                    NS = EMPTY;
+                    next_state = EMPTY;
                 end else if (up_valid && !down_ready) begin
-                    NS             = FULL;
+                    next_state     = FULL;
                     load_skid_data = 1'b1;
                 end
             end
 
             FULL: begin
                 if (down_ready) begin
-                    NS            = BUSY;
+                    next_state    = BUSY;
                     transfer_skid = 1'b1;
                 end
             end
 
             default: begin
-                NS             = EMPTY;
+                next_state     = EMPTY;
                 load_down_data = 1'b0;
                 load_skid_data = 1'b0;
                 transfer_skid  = 1'b0;
@@ -107,7 +107,7 @@ module skid_buffer
 
     // Output logic depending on current state
     always_comb begin
-        case (CS)
+        case (current_state)
             EMPTY: begin
                 up_ready   = 1'b1;
                 down_valid = 1'b0;
@@ -163,12 +163,12 @@ module skid_buffer
 
     // assert that FSM only enters defined states
     always @(posedge clk) begin
-        if (rst_n) assert (CS == EMPTY || CS == BUSY || CS == FULL);
+        if (rst_n) assert (current_state == EMPTY || current_state == BUSY || current_state == FULL);
     end
 
     // assert that skid buffer's READY never goes high when it's full
     always @(posedge clk) begin
-        if (rst_n) assert (!(CS == FULL && up_ready));
+        if (rst_n) assert (!(current_state == FULL && up_ready));
     end
 
     // assert that skid buffer's VALID stays high until slave's READY handshake
@@ -217,8 +217,8 @@ module skid_buffer
 
     // cover that FSM enters full, exits full, and loads data into skid_data
     always @(posedge clk) begin
-        cover (CS == FULL);
-        cover (CS == FULL && transfer_skid);
+        cover (current_state == FULL);
+        cover (current_state == FULL && transfer_skid);
         cover (f_skid_has_tag);
     end
 

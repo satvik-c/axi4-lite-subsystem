@@ -1,5 +1,13 @@
 module uart_rx
-(
+#(
+    // ========================================================
+    // PARAMETERS
+    // ========================================================
+
+    // Internal localparams
+    localparam DATA_BITS     = 8,
+    localparam BIT_COUNTER_W = $clog2(DATA_BITS)
+)(
     // ========================================================
     // PORTS
     // ========================================================
@@ -25,14 +33,6 @@ module uart_rx
 );
 
     // ========================================================
-    // LOCAL PARAMETERS
-    // ========================================================
-
-    localparam DATA_BITS     = 8;
-    localparam BIT_COUNTER_W = $clog2(DATA_BITS);
-
-
-    // ========================================================
     // FSM STATES TYPEDEF
     // ========================================================
 
@@ -51,8 +51,8 @@ module uart_rx
     // ========================================================
 
     // FSM States
-    uart_state_t CS;
-    uart_state_t NS;
+    uart_state_t current_state;
+    uart_state_t next_state;
 
     // Clock Enable & Tick
     logic        enable;
@@ -106,49 +106,49 @@ module uart_rx
 
     // Sequential state transition
     always_ff @(posedge clk) begin
-        if (!rst_n) CS <= IDLE;
-        else        CS <= NS;
+        if (!rst_n) current_state <= IDLE;
+        else        current_state <= next_state;
     end
 
     // Next-state transition combinational logic
     always_comb begin
-        NS = CS;
+        next_state = current_state;
 
-        case (CS)
+        case (current_state)
             IDLE: begin
-                if (!rx_in && prev_rx_in) NS = START;
+                if (!rx_in && prev_rx_in) next_state = START;
             end
 
             START: begin
                 if (os_tick && (os_counter == 4'd8)) begin
-                    if (rx_in == 1'b0) NS = DATA;
-                    else               NS = IDLE;
+                    if (rx_in == 1'b0) next_state = DATA;
+                    else               next_state = IDLE;
                 end
             end
 
             DATA: begin
                 if (os_tick && (os_counter == 4'd15) && data_done) begin
-                    if (parity_en) NS = PARITY;
-                    else           NS = STOP;
+                    if (parity_en) next_state = PARITY;
+                    else           next_state = STOP;
                 end
             end
 
             PARITY: begin
-                if (os_tick && (os_counter == 4'd15)) NS = STOP;
+                if (os_tick && (os_counter == 4'd15)) next_state = STOP;
             end
 
             STOP: begin
                 if (os_tick && (os_counter == 4'd15) && stop_done) begin
-                    if (rx_in && !rx_parity_error) NS = IDLE;
-                    else                           NS = RECOVERY;
+                    if (rx_in && !rx_parity_error) next_state = IDLE;
+                    else                           next_state = RECOVERY;
                 end
             end
 
             RECOVERY: begin
-                if (rx_in) NS = IDLE;
+                if (rx_in) next_state = IDLE;
             end
 
-            default: NS = CS;
+            default: next_state = current_state;
         endcase
     end
 
@@ -161,7 +161,7 @@ module uart_rx
         update_framing     = 1'b0;
         update_parity      = 1'b0;
 
-        case (CS)
+        case (current_state)
             IDLE:     ;
             START:    ;
 
@@ -192,7 +192,7 @@ module uart_rx
             default:  ;
         endcase
 
-        if (CS != NS) clear_counters = 1'b1;
+        if (current_state != next_state) clear_counters = 1'b1;
     end
 
 

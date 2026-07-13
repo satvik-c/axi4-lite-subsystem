@@ -11,7 +11,7 @@ module address_decoder
     output logic                       spi_sel,
     output logic                       i2c_sel,
     output logic                       uart_sel,
-    output logic                       dcerr
+    output logic                       page_dcerr
 );
 
     // ========================================================
@@ -20,16 +20,16 @@ module address_decoder
 
     // Decode input address to select peripheral
     always_comb begin
-        spi_sel  = 1'b0;
-        i2c_sel  = 1'b0;
-        uart_sel = 1'b0;
-        dcerr    = 1'b0;
+        spi_sel    = 1'b0;
+        i2c_sel    = 1'b0;
+        uart_sel   = 1'b0;
+        page_dcerr = 1'b0;
 
         case (addr[11:8])
-            4'h0:    spi_sel  = 1'b1;
-            4'h1:    i2c_sel  = 1'b1;
-            4'h2:    uart_sel = 1'b1;
-            default: dcerr    = 1'b1;
+            4'h0:    spi_sel    = 1'b1;
+            4'h1:    i2c_sel    = 1'b1;
+            4'h2:    uart_sel   = 1'b1;
+            default: page_dcerr = 1'b1;
         endcase
     end
 

@@ -26,7 +26,7 @@ module i2c_regs
     // I2C Control Interface
     output logic                    i2c_en,
     output logic                    i2c_start,
-    output logic                    rw_n,
+    output logic                    i2c_rw_n,
     input  logic                    i2c_busy,
     input  logic                    i2c_rxvalid,
     input  logic                    i2c_nack,
@@ -67,7 +67,7 @@ module i2c_regs
         if (!rst_n) begin
             i2c_en     <= 1'b0;
             i2c_start  <= 1'b0;
-            rw_n       <= 1'b0;
+            i2c_rw_n   <= 1'b0;
             i2c_addr   <= '0;
             i2c_txdata <= '0;
             i2c_clkdiv <= '0;
@@ -82,8 +82,8 @@ module i2c_regs
                 case (wr_addr)
                     I2C_CTRL: begin
                         if (wstrb[0]) begin
-                            i2c_en <= wdata[I2C_CTRL_EN];
-                            rw_n   <= wdata[I2C_CTRL_RW_N];
+                            i2c_en   <= wdata[I2C_CTRL_EN];
+                            i2c_rw_n <= wdata[I2C_CTRL_RW_N];
                         end
                     end
 
@@ -122,13 +122,13 @@ module i2c_regs
     // Register read operations
     always_comb begin
         case (rd_addr)
-            I2C_CTRL:   rdata = {29'b0, rw_n, 1'b0, i2c_en};
+            I2C_CTRL:   rdata = {29'b0, i2c_rw_n, 1'b0, i2c_en};
             I2C_STATUS: rdata = {29'b0, nack_reg, rx_valid_reg, i2c_busy};
             I2C_ADDR:   rdata = {25'b0, i2c_addr};
             I2C_TXDATA: rdata = {24'b0, i2c_txdata};
             I2C_RXDATA: rdata = {24'b0, rx_data_reg};
             I2C_CFG:    rdata = {16'b0, i2c_clkdiv};
-            default:     rdata = 32'b0;
+            default:    rdata = 32'b0;
         endcase
     end
 

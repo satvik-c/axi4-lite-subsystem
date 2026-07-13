@@ -48,8 +48,8 @@ module i2c_master
     // ========================================================
 
     // FSM States
-    i2c_state_t CS;
-    i2c_state_t NS;
+    i2c_state_t current_state;
+    i2c_state_t next_state;
 
     // SDA Tri-State
     logic sda_oe;
@@ -171,8 +171,8 @@ module i2c_master
 
     // Sequential state register for the state machine
     always_ff @(posedge clk) begin
-        if (!rst_n) CS <= IDLE;
-        else        CS <= NS;
+        if (!rst_n) current_state <= IDLE;
+        else        current_state <= next_state;
     end
 
     // Capture configuration parameters on start trigger
@@ -182,7 +182,7 @@ module i2c_master
             addr_reg    <= '0;
             rw_n_reg    <= 1'b0;
             data_reg    <= '0;
-        end else if (CS == IDLE && start && en) begin
+        end else if (current_state == IDLE && start && en) begin
             clk_div_reg <= (clk_div == 16'd0) ? 16'd1 : clk_div;
             addr_reg    <= addr;
             rw_n_reg    <= rw_n;
@@ -192,21 +192,21 @@ module i2c_master
 
     // Next-state transition combinational logic
     always_comb begin
-        NS = CS;
-        case (CS)
-            IDLE:     if (start && en) NS = START;
-            START:    if (bit_done)    NS = ADDR;
-            ADDR:     if (byte_done)   NS = ADDR_ACK;
+        next_state = current_state;
+        case (current_state)
+            IDLE:     if (start && en) next_state = START;
+            START:    if (bit_done)    next_state = ADDR;
+            ADDR:     if (byte_done)   next_state = ADDR_ACK;
             ADDR_ACK: begin
                 if (bit_done) begin
-                    if (ack) NS = DATA;
-                    else     NS = STOP;
+                    if (ack) next_state = DATA;
+                    else     next_state = STOP;
                 end
             end
-            DATA:     if (byte_done)   NS = DATA_ACK;
-            DATA_ACK: if (bit_done)    NS = STOP;
-            STOP:     if (bit_done)    NS = IDLE;
-            default:                   NS = STOP;
+            DATA:     if (byte_done)   next_state = DATA_ACK;
+            DATA_ACK: if (bit_done)    next_state = STOP;
+            STOP:     if (bit_done)    next_state = IDLE;
+            default:                   next_state = STOP;
         endcase
     end
 
@@ -226,7 +226,7 @@ module i2c_master
         sample_data       = 1'b0;
         rx_valid          = 1'b0;
 
-        case (CS)
+        case (current_state)
             IDLE: begin
                 sda_oe_comb = 1'b0;
                 busy        = 1'b0;

@@ -202,6 +202,7 @@ module spi_master
             HOLD: begin
                 // Wait for hold phase completion
             end
+            default: ;
         endcase
     end
 
