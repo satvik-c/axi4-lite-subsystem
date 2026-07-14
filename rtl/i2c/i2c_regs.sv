@@ -30,6 +30,7 @@ module i2c_regs
     input  logic                    i2c_busy,
     input  logic                    i2c_rxvalid,
     input  logic                    i2c_nack,
+    input  logic                    i2c_valid,
     output logic [6:0]              i2c_addr,
     output logic [7:0]              i2c_txdata,
     input  logic [7:0]              i2c_rxdata,
@@ -151,8 +152,7 @@ module i2c_regs
                 rx_valid_reg <= 1'b0;
             end
 
-            if (i2c_nack)       nack_reg <= 1'b1;
-            else if (i2c_start) nack_reg <= 1'b0;
+            if (i2c_valid) nack_reg <= i2c_nack;
         end
     end
 

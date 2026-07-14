@@ -181,6 +181,7 @@ module top_regs
     logic        i2c_busy;
     logic        i2c_rxvalid;
     logic        i2c_nack;
+    logic        i2c_valid;
     logic [6:0]  i2c_addr;
     logic [7:0]  i2c_txdata;
     logic [7:0]  i2c_rxdata;
@@ -205,6 +206,7 @@ module top_regs
         .i2c_busy(i2c_busy),
         .i2c_rxvalid(i2c_rxvalid),
         .i2c_nack(i2c_nack),
+        .i2c_valid(i2c_valid),
         .i2c_addr(i2c_addr),
         .i2c_txdata(i2c_txdata),
         .i2c_rxdata(i2c_rxdata),
@@ -221,7 +223,7 @@ module top_regs
         .rw_n(i2c_rw_n),
         .tx_data(i2c_txdata),
         .busy(i2c_busy),
-        .valid(),
+        .valid(i2c_valid),
         .nack(i2c_nack),
         .rx_data(i2c_rxdata),
         .rx_valid(i2c_rxvalid),
