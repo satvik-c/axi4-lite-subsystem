@@ -13,13 +13,13 @@ The subsystem exposes the following logical interfaces and configurable paramete
 | **System Controls** | System clock and synchronous reset input. | Single clock domain; active-low reset. |
 | **AXI4-Lite Slave Port** | Five-channel host port for register configuration and status access. | 32-bit data width, 12-bit address space, single-outstanding. |
 | **SPI Master Interface** | Serial interface for communicating with external SPI devices. | Serial clock, master serial output, master serial input, and chip select. |
-| **I2C Master Interface** | Two-wire serial interface for external I2C devices. | Bidirectional clock and data lines. |
+| **I2C Master Interface** | Two-wire serial interface for external I2C devices. | Host-driven clock line (no clock stretching); bidirectional open-drain data line. |
 | **UART Interface** | Asynchronous serial interface for console communications. | Serial transmit and serial receive lines. |
 
-**Configurable System Parameters:**
-*   **Local Address Width**: Determines the local address space size (defaulting to a 4 KB page size).
-*   **System Data Width**: Sets the register data bus size (defaulting to 32 bits).
-*   **Transmit Queue Depth**: Defines the buffer size of the UART transmit FIFO (defaulting to 16 entries) and must be a power of two.
+**System Parameters:**
+*   **Local Address Width**: Fixed at 12 bits (4 KB local address space). Not configurable.
+*   **System Data Width**: Fixed at 32 bits. Not configurable.
+*   **Transmit Queue Depth**: UART transmit FIFO depth, fixed at 64 entries. Not exposed as a top-level parameter.
 
 **Top-Level Signal Contract**
 
@@ -50,7 +50,7 @@ The subsystem exposes the following logical interfaces and configurable paramete
 | `SPI_MOSI` | 1 | Output | SPI master-out serial data. |
 | `SPI_MISO` | 1 | Input | SPI master-in serial data. |
 | `SPI_CSN` | 1 | Output | SPI chip select, active-low. |
-| `I2C_SCL` | 1 | Inout | I2C serial clock, open-drain. |
+| `I2C_SCL` | 1 | Output | I2C serial clock, push-pull, no clock stretching. |
 | `I2C_SDA` | 1 | Inout | I2C serial data, open-drain. |
 | `UART_TX` | 1 | Output | UART serial transmit. |
 | `UART_RX` | 1 | Input | UART serial receive. |
@@ -201,3 +201,4 @@ To ensure system reliability, the following constraints are enforced:
 *   **Single-Byte Transfers**: Serial interfaces are restricted to single-byte transactions. Hardware-level multi-byte streaming is not supported.
 *   **Status Polling**: The subsystem uses status polling exclusively. No interrupt lines are exposed.
 *   **Synchronous Operation**: All control paths are synchronous. The subsystem does not implement asynchronous logic, grey-coding, or meta-stability filters.
+*   **No I2C Clock Stretching**: `I2C_SCL` is host-driven and push-pull. Slave-side clock stretching is not supported.

@@ -16,7 +16,7 @@ The scope of verification is focused on proving the correct behavior of the AXI4
 *   **Transaction Descriptor** and **Constrained-Random Generator**.
 *   **AXI Master Driver**: sources all five AXI4-Lite channels, with independent control of the AW and W channel timing.
 *   **SPI Slave Responder / Monitor**: sources `SPI_MISO` and reconstructs frames.
-*   **I2C Slave Responder / Monitor**: sources data and ACK/NACK on the bus and reconstructs transactions.
+*   **I2C Slave Responder / Monitor**: drives `I2C_SDA` only with data and ACK/NACK; monitors `I2C_SCL` passively.
 *   **Active UART RX Driver**: drives the DUT's `UART_RX` input as a remote transmitter to exercise the receive path.
 *   **UART TX Monitor**: passively captures the `UART_TX` output.
 *   **Register / Queue Reference Models**, **AXI Passive Monitor**, **Scoreboard**, and **Coverage Collector**.
@@ -78,8 +78,8 @@ All assertions are implemented in a separate bind file and instantiated directly
 ### White-Box Design Assertions
 *   **W1 [assert]** The input skid buffers do not accept new upstream data when in the `FULL` state.
 *   **W2 [assert]** The skid buffers' `in_ready` and `out_valid` are register-driven, with no combinational path from the downstream ready input to `in_ready`.
-*   **W3 [assert]** The UART transmit queue's pointer-derived occupancy remains within `[0, 16]`.
-*   **W4 [assert]** The queue flags map correctly to occupancy (empty ⇔ occupancy == 0, full ⇔ occupancy == 16).
+*   **W3 [assert]** The UART transmit queue's pointer-derived occupancy remains within `[0, 64]`.
+*   **W4 [assert]** The queue flags map correctly to occupancy (empty ⇔ occupancy == 0, full ⇔ occupancy == 64).
 *   **W5 [assert]** The queue does not overflow, except a write is accepted while full if a pop occurs the same cycle, leaving occupancy unchanged.
 *   **W6 [assert]** The queue does not underflow, except a pop is accepted while empty if a push occurs the same cycle, forwarding the pushed byte directly.
 *   **W7 [assert]** The queue drains into the core only when `UART_CTRL[0]` (`TX_EN`) is enabled.
@@ -89,7 +89,7 @@ All assertions are implemented in a separate bind file and instantiated directly
 *   **C1 [constraint]** Addresses are biased to hit defined registers and to hit undecoded regions in both mapped and unmapped pages.
 *   **C2 [constraint]** `WSTRB` is randomized across its full legal range, biased toward the must-hit patterns (all-zeros, each single lane, all-ones, and multi-lane partials). *(All `WSTRB` values are legal in AXI4-Lite; this is a stimulus bias, not a legality restriction.)*
 *   **C3 [constraint]** `BREADY` and `RREADY` are randomized with wait states but must eventually assert, preventing deadlock.
-*   **C4 [constraint]** `UART_TXDATA` writes are generated in bursts (up to 17+ bytes) to exercise FIFO occupancy limits.
+*   **C4 [constraint]** `UART_TXDATA` writes are generated in bursts (up to 65+ bytes) to exercise FIFO occupancy limits.
 *   **C5 [constraint]** AW and W handshakes are driven with independently randomized timing, producing address-first, data-first, and concurrent arrival.
 *   **C6 [constraint]** Inter-transaction spacing is randomized across back-to-back and gapped presentation.
 *   **C7 [constraint]** The active UART RX driver generates frames across the supported parity (none/even/odd) and stop-bit (1/2) formats, including parity-error injection, with `UART_CFG` set to match — or mismatch, for injected errors — the driven format.
@@ -106,7 +106,7 @@ All assertions are implemented in a separate bind file and instantiated directly
 *   **Access Spacing**: Back-to-back and gapped transactions.
 *   **Response Types**: `OKAY`, `SLVERR`, and `DECERR` on both read and write channels.
 *   **Skid Buffer Occupancy**: Bins for empty, partial, and full states.
-*   **UART Transmit Queue Occupancy**: Bins for empty (`0`), full (`16`), and intermediate levels (`1-4`, `5-11`, `12-15`).
+*   **UART Transmit Queue Occupancy**: Bins for empty (`0`), full (`64`), and intermediate levels (`1-16`, `17-44`, `45-63`).
 *   **UART Transmit Queue Events**: Simultaneous push and pop at partial, full, and empty occupancy, write-while-full drops, and full-to-empty drain transitions.
 *   **UART Frame Format**: Parity (`none`, `even`, `odd`) × stop bits (`1`, `2`).
 *   **Peripheral Transactions**:
@@ -179,10 +179,3 @@ This log is a living artifact, populated during bring-up and regression. Each en
 | - | - | - | - |
 
 ---
-
-## 11. Open Items (resolved during bring-up)
-
-These are intentionally unresolved until the implementation exists, and are tracked here rather than silently assumed:
-*   **B8 / B9 latency bound**: the target of 3 cycles is confirmed against the realized skid-buffer + write/read-FSM path once built; the reference event is fixed (later of the two write boundary handshakes; the AR boundary handshake for reads), but the exact cycle count may be adjusted.
-*   **Regression seed count**: the specific seed count and per-seed transaction depth for `test_random_regression` are pinned at regression time.
-*   **UART FIFO formal suite**: the bmc/cover/prove suite for the UART transmit queue, mirroring the skid buffer's, is added once its formal harness is finalized.
