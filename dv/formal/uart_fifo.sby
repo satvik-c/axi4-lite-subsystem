@@ -19,4 +19,4 @@ read_verilog -sv -formal -D FORMAL uart_fifo.sv
 prep -top uart_fifo
 
 [files]
-../../rtl/uart_fifo.sv
+../../rtl/uart/uart_fifo.sv

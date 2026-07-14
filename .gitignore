@@ -3,5 +3,8 @@ dv/formal/*/
 
 # DSim compilation and run output
 dsim*/
+reports/
 *.env
 *.log
+*.db
+*.fst
