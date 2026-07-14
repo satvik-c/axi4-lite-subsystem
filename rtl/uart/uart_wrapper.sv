@@ -56,9 +56,7 @@ module uart_wrapper
     // ========================================================
 
     // Instantiate transmit FIFO queue
-    uart_fifo #(
-        .DEPTH (64)
-    ) fifo (
+    uart_fifo fifo (
         .clk     (clk),
         .rst_n   (rst_n),
         .wr_en   (wr_en),
@@ -97,6 +95,7 @@ module uart_wrapper
     uart_rx rx (
         .clk         (clk),
         .rst_n       (rst_n),
+        .rx_en       (rx_en),
         .baud_div    (baud_div),
         .parity_en   (parity_en),
         .parity_mode (parity_mode),

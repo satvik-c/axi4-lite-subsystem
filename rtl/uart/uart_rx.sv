@@ -16,6 +16,9 @@ module uart_rx
     input  logic                    clk,
     input  logic                    rst_n,
 
+    // Control
+    input  logic                    rx_en,
+
     // UART Physical Interface
     input  logic                    rx_in,
 
@@ -114,47 +117,51 @@ module uart_rx
     always_comb begin
         next_state = current_state;
 
-        case (current_state)
-            IDLE: begin
-                if (!rx_in && prev_rx_in) next_state = START;
-            end
-
-            START: begin
-                if (os_tick && (os_counter == 4'd8)) begin
-                    if (rx_in == 1'b0) next_state = DATA;
-                    else               next_state = IDLE;
+        if (!rx_en) begin
+            next_state = IDLE;
+        end else begin
+            case (current_state)
+                IDLE: begin
+                    if (!rx_in && prev_rx_in) next_state = START;
                 end
-            end
 
-            DATA: begin
-                if (os_tick && (os_counter == 4'd15) && data_done) begin
-                    if (parity_en) next_state = PARITY;
-                    else           next_state = STOP;
+                START: begin
+                    if (os_tick && (os_counter == 4'd8)) begin
+                        if (rx_in == 1'b0) next_state = DATA;
+                        else               next_state = IDLE;
+                    end
                 end
-            end
 
-            PARITY: begin
-                if (os_tick && (os_counter == 4'd15)) next_state = STOP;
-            end
-
-            STOP: begin
-                if (os_tick && (os_counter == 4'd15) && stop_done) begin
-                    if (rx_in && !rx_parity_error) next_state = IDLE;
-                    else                           next_state = RECOVERY;
+                DATA: begin
+                    if (os_tick && (os_counter == 4'd15) && data_done) begin
+                        if (parity_en) next_state = PARITY;
+                        else           next_state = STOP;
+                    end
                 end
-            end
 
-            RECOVERY: begin
-                if (rx_in) next_state = IDLE;
-            end
+                PARITY: begin
+                    if (os_tick && (os_counter == 4'd15)) next_state = STOP;
+                end
 
-            default: next_state = current_state;
-        endcase
+                STOP: begin
+                    if (os_tick && (os_counter == 4'd15) && stop_done) begin
+                        if (rx_in && !rx_parity_error) next_state = IDLE;
+                        else                           next_state = RECOVERY;
+                    end
+                end
+
+                RECOVERY: begin
+                    if (rx_in) next_state = IDLE;
+                end
+
+                default: next_state = current_state;
+            endcase
+        end
     end
 
     // Combinational output signals and control strobes
     always_comb begin
-        enable             = 1'b1;
+        enable             = rx_en;
         clear_counters     = 1'b0;
         inc_bit_counter    = 1'b0;
         load_shift_rx_data = 1'b0;
