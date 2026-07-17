@@ -24,22 +24,25 @@ class axi_driver;
 
     task drive_write(axi_txn txn);
         @(vif.drv);
-        vif.drv.AWADDR  <= txn.addr;
-        vif.drv.AWPROT  <= txn.prot;
-        vif.drv.AWVALID <= 1;
 
-        vif.drv.WDATA   <= txn.wdata;
-        vif.drv.WSTRB   <= txn.wstrb;
-        vif.drv.WVALID  <= 1;
-        
         fork
             begin
+                repeat (txn.awvalid_delay) @(vif.drv);
+                vif.drv.AWADDR  <= txn.addr;
+                vif.drv.AWPROT  <= txn.prot;
+                vif.drv.AWVALID <= 1;
+
                 do begin
                     @(vif.drv);
                 end while (!vif.drv.AWREADY);
                 vif.drv.AWVALID <= 0;
             end
             begin
+                repeat (txn.wvalid_delay) @(vif.drv);
+                vif.drv.WDATA  <= txn.wdata;
+                vif.drv.WSTRB  <= txn.wstrb;
+                vif.drv.WVALID <= 1;
+
                 do begin
                     @(vif.drv);
                 end while (!vif.drv.WREADY);
@@ -47,7 +50,9 @@ class axi_driver;
             end
         join
 
+        repeat (txn.bready_delay) @(vif.drv);
         vif.drv.BREADY <= 1;
+
         do begin
             @(vif.drv);
         end while (!vif.drv.BVALID);
@@ -57,6 +62,8 @@ class axi_driver;
 
     task drive_read(axi_txn txn);
         @(vif.drv);
+
+        repeat (txn.arvalid_delay) @(vif.drv);
         vif.drv.ARADDR  <= txn.addr;
         vif.drv.ARPROT  <= txn.prot;
         vif.drv.ARVALID <= 1;
@@ -66,7 +73,9 @@ class axi_driver;
         end while (!vif.drv.ARREADY);
         vif.drv.ARVALID <= 0;
 
+        repeat (txn.rready_delay) @(vif.drv);
         vif.drv.RREADY <= 1;
+
         do begin
             @(vif.drv);
         end while (!vif.drv.RVALID);
@@ -89,6 +98,8 @@ class axi_driver;
 
                         if (txn.is_write) drive_write(txn);
                         else drive_read(txn);
+
+                        repeat (txn.gap_delay) @(vif.drv);
                     end
                 join
             end

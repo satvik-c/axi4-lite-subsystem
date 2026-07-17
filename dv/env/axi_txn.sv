@@ -5,6 +5,12 @@ class axi_txn;
     rand logic [2:0] prot;
     rand logic [31:0] wdata;
     rand logic [3:0] wstrb;
+    rand int awvalid_delay;
+    rand int wvalid_delay;
+    rand int bready_delay;
+    rand int arvalid_delay;
+    rand int rready_delay;
+    rand int gap_delay;
 
     logic [31:0] rdata;
     logic [1:0] resp;
@@ -43,6 +49,15 @@ class axi_txn;
             32'hAAAA_AAAA := 5,
             [32'h0000_0001 : 32'hFFFF_FFFE] :/ 70
         };
+    }
+
+    constraint delay_range {
+        awvalid_delay >= 0; awvalid_delay < 10;
+        wvalid_delay >= 0; wvalid_delay < 10;
+        bready_delay >= 0; bready_delay < 10;
+        arvalid_delay >= 0; arvalid_delay < 10;
+        rready_delay >= 0; rready_delay < 10;
+        gap_delay >= 0; gap_delay < 10;
     }
 
 endclass

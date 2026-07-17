@@ -4,6 +4,9 @@ class axi_monitor;
     mailbox #(axi_txn) mon2scb;
     mailbox rst_listeners[$];
 
+    longint cycle_count;
+    longint last_accepted_cycle;
+
     function new(virtual axi4_lite_if.tb_monitor vif, mailbox #(axi_txn) mon2scb);
         this.vif = vif;
         this.mon2scb = mon2scb;
@@ -14,23 +17,48 @@ class axi_monitor;
     endfunction
 
     task monitor_write();
+        int awvalid_delay;
+        int wvalid_delay;
+        longint awvalid_cycle;
+        longint wvalid_cycle;
+
         axi_txn write_txn = new();
         write_txn.is_write = 1;
         
         fork
             begin
-                do begin
+                awvalid_delay = 0;
+
+                while (!vif.mon.AWVALID) begin
                     @(vif.mon);
-                end while (!(vif.mon.AWREADY && vif.mon.AWVALID));
+                    awvalid_delay++;
+                end
+                awvalid_cycle = cycle_count;
+
+                while (!(vif.mon.AWREADY && vif.mon.AWVALID)) begin
+                    @(vif.mon);
+                end
+
                 write_txn.addr = vif.mon.AWADDR;
                 write_txn.prot = vif.mon.AWPROT;
+                write_txn.awvalid_delay = awvalid_delay;
             end
             begin
-                do begin
+                wvalid_delay = 0;
+
+                while (!vif.mon.WVALID) begin
                     @(vif.mon);
-                end while (!(vif.mon.WREADY && vif.mon.WVALID));
+                    wvalid_delay++;
+                end
+                wvalid_cycle = cycle_count;
+
+                while (!(vif.mon.WREADY && vif.mon.WVALID)) begin
+                    @(vif.mon);
+                end
+
                 write_txn.wdata = vif.mon.WDATA;
                 write_txn.wstrb = vif.mon.WSTRB;
+                write_txn.wvalid_delay = wvalid_delay;
             end
         join
 
@@ -38,17 +66,27 @@ class axi_monitor;
             @(vif.mon);
         end while (!(vif.mon.BREADY && vif.mon.BVALID));
         write_txn.resp = vif.mon.BRESP;
+        write_txn.gap_delay = (awvalid_cycle < wvalid_cycle ? awvalid_cycle : wvalid_cycle) - last_accepted_cycle;
+
+        last_accepted_cycle = cycle_count;
 
         mon2scb.put(write_txn);
     endtask
 
     task monitor_read();
+        longint arvalid_cycle;
+
         axi_txn read_txn = new();
         read_txn.is_write = 0;
 
-        do begin
+        while (!vif.mon.ARVALID) begin
             @(vif.mon);
-        end while (!(vif.mon.ARREADY && vif.mon.ARVALID));
+        end
+        arvalid_cycle = cycle_count;
+
+        while (!(vif.mon.ARREADY && vif.mon.ARVALID)) begin
+            @(vif.mon);
+        end
         read_txn.addr = vif.mon.ARADDR;
         read_txn.prot = vif.mon.ARPROT;
 
@@ -57,6 +95,9 @@ class axi_monitor;
         end while (!(vif.mon.RREADY && vif.mon.RVALID));
         read_txn.rdata = vif.mon.RDATA;
         read_txn.resp = vif.mon.RRESP;
+        read_txn.gap_delay = arvalid_cycle - last_accepted_cycle;
+
+        last_accepted_cycle = cycle_count;
 
         mon2scb.put(read_txn);
     endtask
@@ -80,11 +121,17 @@ class axi_monitor;
                     end
                 join
             end
+
+            forever begin
+                @(vif.mon);
+                cycle_count++;
+            end
             
             forever begin
                 @(negedge vif.ARESETn);
                 disable mon_process;
                 foreach (rst_listeners[i]) rst_listeners[i].put(1);
+                last_accepted_cycle = cycle_count;
             end
         join
     endtask
