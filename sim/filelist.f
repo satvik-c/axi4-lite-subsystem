@@ -26,13 +26,21 @@ rtl/axi/write_handler.sv
 rtl/axi/top_regs.sv
 rtl/axi4_lite_subsystem.sv
 
-# DV env
+# DV components
 dv/env/axi_txn.sv
 dv/env/axi_reg_model.sv
 dv/env/axi_driver.sv
 dv/env/axi_monitor.sv
 dv/env/scoreboard.sv
+
+# DV coverage
+dv/cov/subsystem_cov.sv
+
+# DV env
 dv/env/env.sv
+
+# DV assertions
+dv/sva/protocol_sva.sv
 
 # DV tests
 dv/tests/test_smoke.sv
