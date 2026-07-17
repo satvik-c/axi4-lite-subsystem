@@ -3,14 +3,16 @@ class axi_monitor;
     virtual axi4_lite_if.tb_monitor vif;
     mailbox #(axi_txn) mon2scb;
     mailbox mon2scb_rst;
+    mailbox #(axi_txn) mon2cov;
 
     longint cycle_count;
     longint last_accepted_cycle;
 
-    function new(virtual axi4_lite_if.tb_monitor vif, mailbox #(axi_txn) mon2scb, mailbox mon2scb_rst);
+    function new(virtual axi4_lite_if.tb_monitor vif, mailbox #(axi_txn) mon2scb, mailbox mon2scb_rst, mailbox #(axi_txn) mon2cov);
         this.vif = vif;
         this.mon2scb = mon2scb;
         this.mon2scb_rst = mon2scb_rst;
+        this.mon2cov = mon2cov;
     endfunction
 
     task monitor_write();
@@ -68,6 +70,7 @@ class axi_monitor;
         last_accepted_cycle = cycle_count;
 
         mon2scb.put(write_txn);
+        mon2cov.put(write_txn);
     endtask
 
     task monitor_read();
@@ -97,6 +100,7 @@ class axi_monitor;
         last_accepted_cycle = cycle_count;
 
         mon2scb.put(read_txn);
+        mon2cov.put(read_txn);
     endtask
 
     task run();
