@@ -5,8 +5,10 @@ module tb_top;
     logic clk;
     logic rst_n;
 
-    initial clk = 0;
-    always #5 clk = ~clk;
+    initial begin
+        clk = 0;
+        forever #5 clk = ~clk;
+    end
 
     initial begin
         rst_n = 0;
@@ -16,6 +18,12 @@ module tb_top;
 
     axi4_lite_if axi_if(clk, rst_n);
 
+    initial begin
+        axi_if.AWVALID = 1'b0;
+        axi_if.WVALID  = 1'b0;
+        axi_if.ARVALID = 1'b0;
+    end
+
     // Peripheral Pins
     logic miso;
     logic mosi;
@@ -23,13 +31,13 @@ module tb_top;
     logic cs_n;
     logic scl;
     wire sda;
-    assign (pull1, pull0) sda = 1'b1;
     logic tx_out;
     logic rx_in;
 
     // Loopbacks & Pull-ups
-    assign miso = mosi;    
-    assign rx_in = tx_out; 
+    assign miso = mosi;
+    assign rx_in = tx_out;
+    assign (pull1, pull0) sda = 1'b1;
 
     // Simple I2C Slave Model for ACKing
     logic sda_drv;
@@ -37,24 +45,24 @@ module tb_top;
 
     initial begin
         sda_drv = 1'b0;
-    end
 
-    always begin
-        @(negedge sda);
-        if (rst_n && scl === 1'b1) begin
-            repeat (8) @(posedge scl);
-            @(negedge scl);
-            sda_drv = 1'b1;
+        forever begin
+            @(negedge sda);
+            if (rst_n && scl === 1'b1) begin
+                repeat (8) @(posedge scl);
+                @(negedge scl);
+                sda_drv = 1'b1;
 
-            @(negedge scl);
-            sda_drv = 1'b0;
+                @(negedge scl);
+                sda_drv = 1'b0;
 
-            repeat (8) @(posedge scl);
-            @(negedge scl);
-            sda_drv = 1'b1;
+                repeat (8) @(posedge scl);
+                @(negedge scl);
+                sda_drv = 1'b1;
 
-            @(negedge scl);
-            sda_drv = 1'b0;
+                @(negedge scl);
+                sda_drv = 1'b0;
+            end
         end
     end
 
@@ -70,9 +78,15 @@ module tb_top;
         .rx_in(rx_in)
     );
 
+    bind axi4_lite_subsystem protocol_sva u_protocol_sva (.vif(s_axi));
+
     initial begin
         static test_smoke t = new(axi_if);
         t.run();
+
+        $display("Test complete: %0d errors / %0d transactions", t.e.scb.errors, t.e.scb.count);
+        t.e.cov.print();
+        $finish;
     end
 
 endmodule
