@@ -2,18 +2,15 @@ class axi_monitor;
 
     virtual axi4_lite_if.tb_monitor vif;
     mailbox #(axi_txn) mon2scb;
-    mailbox rst_listeners[$];
+    mailbox mon2scb_rst;
 
     longint cycle_count;
     longint last_accepted_cycle;
 
-    function new(virtual axi4_lite_if.tb_monitor vif, mailbox #(axi_txn) mon2scb);
+    function new(virtual axi4_lite_if.tb_monitor vif, mailbox #(axi_txn) mon2scb, mailbox mon2scb_rst);
         this.vif = vif;
         this.mon2scb = mon2scb;
-    endfunction
-
-    function void connect_rst(mailbox m);
-        rst_listeners.push_back(m);
+        this.mon2scb_rst = mon2scb_rst;
     endfunction
 
     task monitor_write();
@@ -130,7 +127,7 @@ class axi_monitor;
             forever begin
                 @(negedge vif.ARESETn);
                 disable mon_process;
-                foreach (rst_listeners[i]) rst_listeners[i].put(1);
+                mon2scb_rst.put(1);
                 last_accepted_cycle = cycle_count;
             end
         join

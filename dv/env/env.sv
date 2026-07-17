@@ -18,10 +18,8 @@ class env;
         mon2scb_rst = new();
         
         drv_axi = new(vif, test2drv);
-        mon_axi = new(vif, mon2scb);
+        mon_axi = new(vif, mon2scb, mon2scb_rst);
         scb = new(mon2scb, mon2scb_rst);
-
-        mon_axi.connect_rst(mon2scb_rst);
     endfunction
 
     task run();
