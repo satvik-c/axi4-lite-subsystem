@@ -71,9 +71,6 @@ All assertions are implemented in a separate bind file and instantiated directly
 *   **B7 [assert]** The read outstanding-transaction count is bounded to `[0, 1]`.
 *   **B8 [assert]** Write-response latency is bounded: `BVALID` asserts within a fixed number of cycles (target 3) of the **later** of the AW and W boundary handshakes. *(Exact bound confirmed against the implemented skid-buffer + FSM path during bring-up; see §11.)*
 *   **B9 [assert]** Read-response latency is bounded: `RVALID` asserts within a fixed number of cycles (target 3) of the AR boundary handshake. *(Same confirmation as B8.)*
-*   **B10 [assert]** A write to a read-only register produces `BRESP = SLVERR` and leaves the register unchanged.
-*   **B11 [assert]** An undecoded register address access produces `DECERR` on the corresponding response channel.
-*   **B12 [assert]** Read-on-clear status flags (such as `RX_VALID`) clear on the R-channel handshake cycle (`RVALID` & `RREADY`), not on `RVALID` assertion alone.
 
 ### White-Box Design Assertions
 *   **W1 [assert]** The input skid buffers do not accept new upstream data when in the `FULL` state.
@@ -86,6 +83,8 @@ All assertions are implemented in a separate bind file and instantiated directly
 *   **W8 [assert]** The queue's read output changes only on an accepted pop.
 *   **W9 [assert]** Exactly one of the address decoder's page-select outputs (or its decode-error output) is asserted for any address — no overlapping or aliased page decode.
 *   **W10 [assert]** The decode-error output asserts if and only if the address falls outside the three defined pages.
+*   **W11 [assert]** Read-on-clear status flags (such as `RX_VALID`) clear on the R-channel handshake cycle (`RVALID` & `RREADY`), not on `RVALID` assertion alone.
+*   **W12 [assert]** A write to a read-only register leaves the register unchanged.
 
 ### Stimulus Constraints
 *   **C1 [constraint]** Addresses are biased to hit defined registers and to hit undecoded regions in both mapped and unmapped pages.
