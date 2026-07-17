@@ -1,0 +1,105 @@
+class axi_driver;
+
+    virtual axi4_lite_if.tb_driver vif;
+    mailbox #(axi_txn) test2drv;
+
+    function new(virtual axi4_lite_if.tb_driver vif, mailbox #(axi_txn) test2drv);
+        this.vif = vif;
+        this.test2drv = test2drv;
+    endfunction
+
+    function void reset();
+        vif.drv.AWADDR  <= 0;
+        vif.drv.AWPROT  <= 0;
+        vif.drv.AWVALID <= 0;
+        vif.drv.WDATA   <= 0;
+        vif.drv.WSTRB   <= 0;
+        vif.drv.WVALID  <= 0;
+        vif.drv.BREADY  <= 0;
+        vif.drv.ARADDR  <= 0;
+        vif.drv.ARPROT  <= 0;
+        vif.drv.ARVALID <= 0;
+        vif.drv.RREADY  <= 0;
+    endfunction
+
+    task drive_write(axi_txn txn);
+        @(vif.drv);
+        vif.drv.AWADDR  <= txn.addr;
+        vif.drv.AWPROT  <= txn.prot;
+        vif.drv.AWVALID <= 1;
+
+        vif.drv.WDATA   <= txn.wdata;
+        vif.drv.WSTRB   <= txn.wstrb;
+        vif.drv.WVALID  <= 1;
+        
+        fork
+            begin
+                do begin
+                    @(vif.drv);
+                end while (!vif.drv.AWREADY);
+                vif.drv.AWVALID <= 0;
+            end
+            begin
+                do begin
+                    @(vif.drv);
+                end while (!vif.drv.WREADY);
+                vif.drv.WVALID <= 0;
+            end
+        join
+
+        vif.drv.BREADY <= 1;
+        do begin
+            @(vif.drv);
+        end while (!vif.drv.BVALID);
+        vif.drv.BREADY <= 0;
+        txn.resp = vif.drv.BRESP;
+    endtask
+
+    task drive_read(axi_txn txn);
+        @(vif.drv);
+        vif.drv.ARADDR  <= txn.addr;
+        vif.drv.ARPROT  <= txn.prot;
+        vif.drv.ARVALID <= 1;
+        
+        do begin
+            @(vif.drv);
+        end while (!vif.drv.ARREADY);
+        vif.drv.ARVALID <= 0;
+
+        vif.drv.RREADY <= 1;
+        do begin
+            @(vif.drv);
+        end while (!vif.drv.RVALID);
+        vif.drv.RREADY <= 0;
+        txn.rdata = vif.drv.RDATA;
+        txn.resp  = vif.drv.RRESP;
+    endtask
+
+    task run();
+        reset();
+
+        fork
+            forever begin
+                wait (vif.ARESETn === 1);
+
+                fork : tx_process
+                    begin
+                        axi_txn txn;
+                        test2drv.get(txn);
+
+                        if (txn.is_write) drive_write(txn);
+                        else drive_read(txn);
+                    end
+                join
+            end
+
+            forever begin
+                @(negedge vif.ARESETn);
+                
+                disable tx_process;
+                reset();
+            end
+        join
+    endtask
+
+endclass
