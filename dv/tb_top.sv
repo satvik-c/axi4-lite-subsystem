@@ -84,8 +84,10 @@ module tb_top;
         static test_smoke t = new(axi_if);
         t.run();
 
-        $display("Test complete: %0d errors / %0d transactions", t.e.scb.errors, t.e.scb.count);
+        $display("==============================================");
+        $display(" Test complete: %0d errors / %0d transactions", t.e.scb.errors, t.e.scb.count);
         t.e.cov.print();
+        
         $finish;
     end
 

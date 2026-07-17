@@ -50,11 +50,11 @@ class subsystem_cov;
             bins decerr = { 2'b11 };
         }
 
-        cross cp_txn_type, cp_reg_hitmap;
-        cross cp_reg_hitmap, cp_wstrb;
-        cross cp_txn_type, cp_response;
-        cross cp_arrival_order, cp_response;
-        cross cp_spacing, cp_txn_type;
+        cx_type_reg     : cross cp_txn_type, cp_reg_hitmap;
+        cx_reg_wstrb    : cross cp_reg_hitmap, cp_wstrb;
+        cx_type_resp    : cross cp_txn_type, cp_response;
+        cx_order_resp   : cross cp_arrival_order, cp_response;
+        cx_spacing_type : cross cp_spacing, cp_txn_type;
         
     endgroup
 
@@ -64,7 +64,28 @@ class subsystem_cov;
     endfunction
 
     function void print();
-        // TODO
+        $display("==============================================");
+        $display(" Functional Coverage Report");
+        $display("==============================================");
+        $display(" Overall coverage  : %0.2f%%", cg_subsystem.get_coverage());
+        $display("----------------------------------------------");
+        $display(" Coverpoints");
+        $display("----------------------------------------------");
+        $display("   cp_txn_type      : %0.2f%%", cg_subsystem.cp_txn_type.get_coverage());
+        $display("   cp_reg_hitmap    : %0.2f%%", cg_subsystem.cp_reg_hitmap.get_coverage());
+        $display("   cp_wstrb         : %0.2f%%", cg_subsystem.cp_wstrb.get_coverage());
+        $display("   cp_arrival_order : %0.2f%%", cg_subsystem.cp_arrival_order.get_coverage());
+        $display("   cp_spacing       : %0.2f%%", cg_subsystem.cp_spacing.get_coverage());
+        $display("   cp_response      : %0.2f%%", cg_subsystem.cp_response.get_coverage());
+        $display("----------------------------------------------");
+        $display(" Crosses");
+        $display("----------------------------------------------");
+        $display("   cx_type_reg      : %0.2f%%", cg_subsystem.cx_type_reg.get_coverage());
+        $display("   cx_reg_wstrb     : %0.2f%%", cg_subsystem.cx_reg_wstrb.get_coverage());
+        $display("   cx_type_resp     : %0.2f%%", cg_subsystem.cx_type_resp.get_coverage());
+        $display("   cx_order_resp    : %0.2f%%", cg_subsystem.cx_order_resp.get_coverage());
+        $display("   cx_spacing_type  : %0.2f%%", cg_subsystem.cx_spacing_type.get_coverage());
+        $display("==============================================");
     endfunction
 
     function void classify(input axi_txn txn, output arrival_order_e order, output spacing_e space);
