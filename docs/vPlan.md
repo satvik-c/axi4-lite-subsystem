@@ -84,6 +84,8 @@ All assertions are implemented in a separate bind file and instantiated directly
 *   **W6 [assert]** The queue does not underflow, except a pop is accepted while empty if a push occurs the same cycle, forwarding the pushed byte directly.
 *   **W7 [assert]** The queue drains into the core only when `UART_CTRL[0]` (`TX_EN`) is enabled.
 *   **W8 [assert]** The queue's read output changes only on an accepted pop.
+*   **W9 [assert]** Exactly one of the address decoder's page-select outputs (or its decode-error output) is asserted for any address — no overlapping or aliased page decode.
+*   **W10 [assert]** The decode-error output asserts if and only if the address falls outside the three defined pages.
 
 ### Stimulus Constraints
 *   **C1 [constraint]** Addresses are biased to hit defined registers and to hit undecoded regions in both mapped and unmapped pages.
@@ -116,6 +118,7 @@ All assertions are implemented in a separate bind file and instantiated directly
 
 ### Required Crosses
 *   `Register` × `Transaction Type` — reads and writes to every register.
+*   `Register` × `WSTRB` — every writable register written with each must-hit WSTRB pattern.
 *   `Write Channel Arrival Order` × `Transaction outcome` — all three entry paths reach a valid response.
 *   `Access Spacing` × `Transaction Type`.
 *   `SPI CPOL` × `SPI CPHA` — all four SPI modes exercised.
@@ -164,7 +167,7 @@ Verification is complete and ready for release when:
 *   **Code Coverage**: 100% block, branch, and toggle coverage on control/routing logic, with documented exceptions.
 *   **Zero Mismatch Errors**: The scoreboard reports zero data mismatches across register and serial checks.
 *   **Zero Protocol Violations**: No AXI or interface SVA failures across the regression.
-*   **Formal Proofs**: All safety and liveness properties of the skid buffer and the synchronous UART transmit queue are proven via formal analysis.
+*   **Formal Proofs**: All safety and liveness properties of the skid buffer, the synchronous UART transmit queue, the address decoder, and the AXI4-Lite read/write handlers are proven via formal analysis (§5 SVA Inventory).
 *   **Regression Status**: The multi-seed suite compiles and completes cleanly without warnings.
 *   **Bug-Hunt Log**: Populated, with each entry root-caused and resolved (§10).
 
@@ -176,6 +179,7 @@ This log is a living artifact, populated during bring-up and regression. Each en
 
 | ID & Type | Observed Symptom | Root Cause & Resolution | Affected File |
 |---|---|---|---|
-| - | - | - | - |
+| **RTL - 01** | `I2C_STATUS.nack` read back as `1` after a successful transaction. | `nack_reg` was gated on the combinational `i2c_nack` level, which is high through `IDLE`/`START` and always shadowed the `i2c_start` clear. Fixed by latching `nack_reg` from the master's `valid` completion pulse instead. | [i2c_regs.sv](../rtl/i2c/i2c_regs.sv#L155) |
+| **RTL - 02** | Deasserting `rx_en` had no effect on UART reception. | The RX FSM and baud/oversample generator ran unconditionally, never consulting `rx_en`. Fixed by gating `next_state` and `enable` on `rx_en`. | [uart_rx.sv](../rtl/uart/uart_rx.sv#L120) |
 
 ---
