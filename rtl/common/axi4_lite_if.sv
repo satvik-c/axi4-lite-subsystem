@@ -44,8 +44,45 @@ interface axi4_lite_if
 
 
     // ========================================================
+    // CLOCKING BLOCKS
+    // ========================================================
+
+    // Driver Block
+    clocking drv @(posedge ACLK);
+        default input #1step output #1ns;
+
+        output AWADDR, AWPROT, AWVALID;
+        output WDATA, WSTRB, WVALID;
+        output BREADY;
+        output ARADDR, ARPROT, ARVALID;
+        output RREADY;
+
+        input  AWREADY;
+        input  WREADY;
+        input  BRESP, BVALID;
+        input  ARREADY;
+        input  RDATA, RRESP, RVALID;
+    endclocking
+
+    // Monitor Block
+    clocking mon @(posedge ACLK);
+        default input #1step;
+
+        input AWADDR, AWPROT, AWVALID, AWREADY;
+        input WDATA, WSTRB, WVALID, WREADY;
+        input BRESP, BVALID, BREADY;
+        input ARADDR, ARPROT, ARVALID, ARREADY;
+        input RDATA, RRESP, RVALID, RREADY;
+    endclocking
+
+
+    // ========================================================
     // MODPORTS
     // ========================================================
+
+    // Driver and Monitor Modports
+    modport tb_driver  (clocking drv, input ARESETn);
+    modport tb_monitor (clocking mon, input ARESETn);
 
     // Master Modport
     modport master (
