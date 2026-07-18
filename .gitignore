@@ -8,3 +8,7 @@ reports/
 *.log
 *.db
 *.fst
+
+# Sigasi project artiacts
+project.sigasi
+*.sigasi/
