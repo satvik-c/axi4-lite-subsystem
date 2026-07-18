@@ -79,6 +79,13 @@ module tb_top;
     );
 
     bind axi4_lite_subsystem protocol_sva u_protocol_sva (.vif(s_axi));
+    bind skid_buffer     skid_buffer_sva  u_skid_buffer_sva  (.*);
+    bind uart_fifo       uart_fifo_sva    u_uart_fifo_sva    (.*);
+    bind uart_wrapper    uart_wrapper_sva u_uart_wrapper_sva (.*);
+    bind address_decoder decoder_sva      u_decoder_sva      (.*);
+    bind spi_regs        spi_regs_sva     u_spi_regs_sva     (.*);
+    bind i2c_regs        i2c_regs_sva     u_i2c_regs_sva     (.*);
+    bind uart_regs       uart_regs_sva    u_uart_regs_sva    (.*);
 
     initial begin
         static test_smoke t = new(axi_if);
@@ -87,7 +94,7 @@ module tb_top;
         $display("==============================================");
         $display(" Test complete: %0d errors / %0d transactions", t.e.scb.errors, t.e.scb.count);
         t.e.cov.print();
-        
+
         $finish;
     end
 

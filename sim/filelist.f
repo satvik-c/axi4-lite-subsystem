@@ -41,6 +41,10 @@ dv/env/env.sv
 
 # DV assertions
 dv/sva/protocol_sva.sv
+dv/sva/skid_buffer_sva.sv
+dv/sva/uart_fifo_sva.sv
+dv/sva/decoder_sva.sv
+dv/sva/regs_sva.sv
 
 # DV tests
 dv/tests/test_smoke.sv
