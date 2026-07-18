@@ -83,7 +83,7 @@ All assertions are implemented in a separate bind file and instantiated directly
 *   **W8 [assert]** The queue's read output changes only on an accepted pop.
 *   **W9 [assert]** Exactly one of the address decoder's page-select outputs (or its decode-error output) is asserted for any address — no overlapping or aliased page decode.
 *   **W10 [assert]** The decode-error output asserts if and only if the address falls outside the three defined pages.
-*   **W11 [assert]** Read-on-clear status flags (such as `RX_VALID`) clear on the R-channel handshake cycle (`RVALID` & `RREADY`), not on `RVALID` assertion alone.
+*   **W11 [assert]** Read-on-clear status flags (such as `RX_VALID`) clear on the read-commit strobe (`rd_commit`) that accepts the read address, not on `RVALID` assertion.
 *   **W12 [assert]** A write to a read-only register leaves the register unchanged.
 
 ### Stimulus Constraints
