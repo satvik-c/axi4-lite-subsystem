@@ -25,17 +25,13 @@ module tb_top;
     end
 
     // Peripheral Pins
-    logic miso;
-    logic mosi;
-    logic sclk;
-    logic cs_n;
+    spi_if spi_vif();
     logic scl;
     wire sda;
     logic tx_out;
     logic rx_in;
 
     // Loopbacks & Pull-ups
-    assign miso = mosi;
     assign rx_in = tx_out;
     assign (pull1, pull0) sda = 1'b1;
 
@@ -68,10 +64,10 @@ module tb_top;
 
     axi4_lite_subsystem dut (
         .s_axi(axi_if.slave),
-        .miso(miso),
-        .mosi(mosi),
-        .sclk(sclk),
-        .cs_n(cs_n),
+        .miso(spi_vif.miso),
+        .mosi(spi_vif.mosi),
+        .sclk(spi_vif.sclk),
+        .cs_n(spi_vif.cs_n),
         .scl(scl),
         .sda(sda),
         .tx_out(tx_out),
@@ -88,7 +84,7 @@ module tb_top;
     bind uart_regs       uart_regs_sva    u_uart_regs_sva    (.*);
 
     initial begin
-        static test_smoke t = new(axi_if);
+        static test_smoke t = new(axi_if, spi_vif);
         t.run();
 
         $display("==============================================");

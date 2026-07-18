@@ -12,21 +12,22 @@ typedef enum {
 class subsystem_cov;
 
     mailbox #(axi_txn) mon2cov;
+    mailbox #(spi_txn) slv2cov;
 
-    covergroup cg_subsystem with function sample(axi_txn txn, arrival_order_e order, spacing_e space);
+    covergroup cg_axi with function sample(axi_txn txn_axi, arrival_order_e order, spacing_e space);
 
-        cp_txn_type : coverpoint txn.is_write {
+        cp_txn_type : coverpoint txn_axi.is_write {
             bins read = { 0 };
             bins write = { 1 };
         }
 
-        cp_reg_hitmap : coverpoint txn.addr {
+        cp_reg_hitmap : coverpoint txn_axi.addr {
             bins spi[] = { 12'h000, 12'h004, 12'h008, 12'h00C, 12'h010 };
             bins i2c[] = { 12'h100, 12'h104, 12'h108, 12'h10C, 12'h110, 12'h114 };
             bins uart[] = { 12'h200, 12'h204, 12'h208, 12'h20C, 12'h210 };
         }
 
-        cp_wstrb : coverpoint txn.wstrb {
+        cp_wstrb : coverpoint txn_axi.wstrb {
             bins single_byte[] = { 4'b0001, 4'b0010, 4'b0100, 4'b1000 };
             bins zeros[] = { 4'b0000 };
             bins ones[] = { 4'b1111 };
@@ -44,7 +45,7 @@ class subsystem_cov;
             bins gapped = { GAPPED };
         }
 
-        cp_response : coverpoint txn.resp {
+        cp_response : coverpoint txn_axi.resp {
             bins okay = { 2'b00 };
             bins slverr = { 2'b10 };
             bins decerr = { 2'b11 };
@@ -58,33 +59,77 @@ class subsystem_cov;
         
     endgroup
 
-    function new (mailbox #(axi_txn) mon2cov);
+    covergroup cg_spi with function sample(spi_txn txn_spi);
+        
+        cp_cpol : coverpoint txn_spi.cpol {
+            bins zero = { 0 };
+            bins one = { 1 };
+        }
+
+        cp_cpha : coverpoint txn_spi.cpha {
+            bins zero = { 0 };
+            bins one = { 1 };
+        }
+
+        cp_mosi : coverpoint txn_spi.mosi_expected {
+            bins zeros = { 8'h00 };
+            bins ones = { 8'hFF };
+            bins alt1 = { 8'h55 };
+            bins alt2 = { 8'hAA };
+            bins others = default;
+        }
+
+        cp_miso : coverpoint txn_spi.miso {
+            bins zeros = { 8'h00 };
+            bins ones = { 8'hFF };
+            bins alt1 = { 8'h55 };
+            bins alt2 = { 8'hAA };
+            bins others = default;
+        }
+
+        cx_cpol_cpha : cross cp_cpol, cp_cpha;
+        cx_cpha_mosi : cross cp_cpha, cp_mosi {
+            ignore_bins skip_others = binsof(cp_mosi.others);
+        }
+        cx_cpha_miso : cross cp_cpha, cp_miso {
+            ignore_bins skip_others = binsof(cp_miso.others);
+        }
+
+    endgroup
+
+    function new (mailbox #(axi_txn) mon2cov, mailbox #(spi_txn) slv2cov);
         this.mon2cov = mon2cov;
-        cg_subsystem = new();
+        this.slv2cov = slv2cov;
+        cg_axi = new();
+        cg_spi = new();
     endfunction
 
     function void print();
         $display("==============================================");
         $display(" Functional Coverage Report");
+        $display(" Overall coverage  : %0.2f%%", $get_coverage());
         $display("==============================================");
-        $display(" Overall coverage  : %0.2f%%", cg_subsystem.get_coverage());
+        $display(" AXI");
+        $display("   cp_txn_type      : %0.2f%%", cg_axi.cp_txn_type.get_coverage());
+        $display("   cp_reg_hitmap    : %0.2f%%", cg_axi.cp_reg_hitmap.get_coverage());
+        $display("   cp_wstrb         : %0.2f%%", cg_axi.cp_wstrb.get_coverage());
+        $display("   cp_arrival_order : %0.2f%%", cg_axi.cp_arrival_order.get_coverage());
+        $display("   cp_spacing       : %0.2f%%", cg_axi.cp_spacing.get_coverage());
+        $display("   cp_response      : %0.2f%%", cg_axi.cp_response.get_coverage());
+        $display("   cx_type_reg      : %0.2f%%", cg_axi.cx_type_reg.get_coverage());
+        $display("   cx_reg_wstrb     : %0.2f%%", cg_axi.cx_reg_wstrb.get_coverage());
+        $display("   cx_type_resp     : %0.2f%%", cg_axi.cx_type_resp.get_coverage());
+        $display("   cx_order_resp    : %0.2f%%", cg_axi.cx_order_resp.get_coverage());
+        $display("   cx_spacing_type  : %0.2f%%", cg_axi.cx_spacing_type.get_coverage());
         $display("----------------------------------------------");
-        $display(" Coverpoints");
-        $display("----------------------------------------------");
-        $display("   cp_txn_type      : %0.2f%%", cg_subsystem.cp_txn_type.get_coverage());
-        $display("   cp_reg_hitmap    : %0.2f%%", cg_subsystem.cp_reg_hitmap.get_coverage());
-        $display("   cp_wstrb         : %0.2f%%", cg_subsystem.cp_wstrb.get_coverage());
-        $display("   cp_arrival_order : %0.2f%%", cg_subsystem.cp_arrival_order.get_coverage());
-        $display("   cp_spacing       : %0.2f%%", cg_subsystem.cp_spacing.get_coverage());
-        $display("   cp_response      : %0.2f%%", cg_subsystem.cp_response.get_coverage());
-        $display("----------------------------------------------");
-        $display(" Crosses");
-        $display("----------------------------------------------");
-        $display("   cx_type_reg      : %0.2f%%", cg_subsystem.cx_type_reg.get_coverage());
-        $display("   cx_reg_wstrb     : %0.2f%%", cg_subsystem.cx_reg_wstrb.get_coverage());
-        $display("   cx_type_resp     : %0.2f%%", cg_subsystem.cx_type_resp.get_coverage());
-        $display("   cx_order_resp    : %0.2f%%", cg_subsystem.cx_order_resp.get_coverage());
-        $display("   cx_spacing_type  : %0.2f%%", cg_subsystem.cx_spacing_type.get_coverage());
+        $display(" SPI");
+        $display("   cp_cpol          : %0.2f%%", cg_spi.cp_cpol.get_coverage());
+        $display("   cp_cpha          : %0.2f%%", cg_spi.cp_cpha.get_coverage());
+        $display("   cp_mosi          : %0.2f%%", cg_spi.cp_mosi.get_coverage());
+        $display("   cp_miso          : %0.2f%%", cg_spi.cp_miso.get_coverage());
+        $display("   cx_cpol_cpha     : %0.2f%%", cg_spi.cx_cpol_cpha.get_coverage());
+        $display("   cx_cpha_mosi     : %0.2f%%", cg_spi.cx_cpha_mosi.get_coverage());
+        $display("   cx_cpha_miso     : %0.2f%%", cg_spi.cx_cpha_miso.get_coverage());
         $display("==============================================");
     endfunction
 
@@ -98,16 +143,23 @@ class subsystem_cov;
     endfunction
 
     task run();
-        forever begin
-            axi_txn txn;
-            arrival_order_e order;
-            spacing_e space;
+        fork
+            forever begin
+                axi_txn txn_axi;
+                arrival_order_e order;
+                spacing_e space;
+                
+                mon2cov.get(txn_axi);
+                classify(txn_axi, order, space);
+                cg_axi.sample(txn_axi, order, space);
+            end
+            forever begin
+                spi_txn txn_spi;
 
-            mon2cov.get(txn);
-            classify(txn, order, space);
-
-            cg_subsystem.sample(txn, order, space);
-        end
+                slv2cov.get(txn_spi);
+                cg_spi.sample(txn_spi);
+            end
+        join
     endtask
 
 endclass

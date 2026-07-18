@@ -26,12 +26,18 @@ rtl/axi/write_handler.sv
 rtl/axi/top_regs.sv
 rtl/axi4_lite_subsystem.sv
 
+# SPI slave
+dv/env/spi_if.sv
+dv/env/spi_txn.sv
+
 # DV components
 dv/env/axi_txn.sv
 dv/env/axi_reg_model.sv
 dv/env/axi_driver.sv
 dv/env/axi_monitor.sv
 dv/env/scoreboard.sv
+
+dv/env/spi_slave.sv
 
 # DV coverage
 dv/cov/subsystem_cov.sv

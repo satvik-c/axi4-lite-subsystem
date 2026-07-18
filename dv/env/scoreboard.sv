@@ -2,12 +2,16 @@ class scoreboard;
 
     mailbox #(axi_txn) mon2scb;
     mailbox mon2scb_rst;
+
+    mailbox #(spi_txn) slv2scb;
+
     axi_reg_model reg_model;
     int count, errors;
 
-    function new(mailbox #(axi_txn) mon2scb, mailbox mon2scb_rst);
+    function new(mailbox #(axi_txn) mon2scb, mailbox mon2scb_rst, mailbox #(spi_txn) slv2scb);
         this.mon2scb = mon2scb;
         this.mon2scb_rst = mon2scb_rst;
+        this.slv2scb = slv2scb;
         reg_model = new();
         count = 0;
         errors = 0;
@@ -34,6 +38,18 @@ class scoreboard;
                             mon_txn.addr, exp_resp, exp_rdata, mon_txn.resp, mon_txn.rdata);
                         errors++;
                     end
+                end
+
+                count++;
+            end
+
+            forever begin
+                spi_txn txn_spi;
+                slv2scb.get(txn_spi);
+
+                if (txn_spi.mosi_sampled !== txn_spi.mosi_expected) begin
+                    $error("[spi] MOSI mismatch: expected=0x%0h, got=0x%0h", txn_spi.mosi_expected, txn_spi.mosi_sampled);
+                    errors++;
                 end
 
                 count++;

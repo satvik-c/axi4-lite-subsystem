@@ -2,8 +2,8 @@ class test_smoke;
 
     env e;
 
-    function new(virtual axi4_lite_if vif);
-        e = new(vif);
+    function new(virtual axi4_lite_if vif, virtual spi_if spi_vif);
+        e = new(vif, spi_vif);
     endfunction
 
     task run();
