@@ -109,10 +109,13 @@ All assertions are implemented in a separate bind file and instantiated directly
 *   **UART Transmit Queue Occupancy**: Bins for empty (`0`), full (`64`), and intermediate levels (`1-16`, `17-44`, `45-63`).
 *   **UART Transmit Queue Events**: Simultaneous push and pop at partial, full, and empty occupancy, write-while-full drops, and full-to-empty drain transitions.
 *   **UART Frame Format**: Parity (`none`, `even`, `odd`) × stop bits (`1`, `2`).
-*   **Peripheral Transactions**:
-    *   SPI transfers across configuration parameters.
-    *   I2C transactions with ACK and NACK responses.
-    *   UART transmit and receive frames, including parity-error injection (`RX_PERR`).
+*   **SPI CPOL**: Clock idle level, both polarities.
+*   **SPI CPHA**: Clock phase, both settings.
+*   **SPI Transfer Data**: All-zeros, all-ones, alternating (`0x55`/`0xAA`), and other byte values on `MOSI` and `MISO`.
+*   **I2C Direction (`RW_N`)**: Read and write transactions.
+*   **I2C ACK/NACK Response**: Both ACK and NACK from the slave.
+*   **I2C Transfer Data**: All-zeros, all-ones, alternating (`0x55`/`0xAA`), and other byte values on `TXDATA`/`RXDATA`.
+*   **UART RX Status Events**: `RX_VALID` on valid receipt, `RX_OVERRUN` on a second byte before read, `RX_PERR` on injected parity errors.
 
 ### Required Crosses
 *   `Register` × `Transaction Type` — reads and writes to every register.
@@ -120,6 +123,8 @@ All assertions are implemented in a separate bind file and instantiated directly
 *   `Write Channel Arrival Order` × `Transaction outcome` — all three entry paths reach a valid response.
 *   `Access Spacing` × `Transaction Type`.
 *   `SPI CPOL` × `SPI CPHA` — all four SPI modes exercised.
+*   `SPI CPHA` × `SPI Transfer Data` — each interesting data pattern seen in both CPHA settings, on both `MOSI` and `MISO`.
+*   `I2C Direction` × `I2C ACK/NACK Response` — both directions see both ACK and NACK.
 *   `UART Transmit Queue Occupancy` × `BAUD_DIV` — FIFO stressed across slow and fast baud rates.
 
 ### Closure Target
@@ -129,11 +134,14 @@ The following must-hit set is required at 100%; overall functional coverage must
 *   All WSTRB must-hit patterns.
 *   All three write-channel arrival-order paths.
 *   All four SPI modes.
+*   All four interesting SPI data patterns (`0x00`/`0xFF`/`0x55`/`0xAA`) observed on both `MOSI` and `MISO`.
 *   At least one hit on skid buffer `FULL`.
-*   Both ACK and NACK observed on I2C.
+*   Both I2C directions (`read`/`write`) see both ACK and NACK.
+*   All four interesting I2C data patterns observed on `TXDATA`/`RXDATA`.
 *   SPI and UART RX round-trips exercised.
 *   At least one FIFO full-to-empty drain, simultaneous push-pop at full and empty occupancy, and write-while-full drop.
 *   All three parity modes and both stop-bit settings exercised, and at least one RX parity-error detection.
+*   At least one `RX_OVERRUN` event.
 
 ---
 
