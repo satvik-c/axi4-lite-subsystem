@@ -26,41 +26,13 @@ module tb_top;
 
     // Peripheral Pins
     spi_if spi_vif();
-    logic scl;
-    wire sda;
+    i2c_if i2c_vif();
     logic tx_out;
     logic rx_in;
 
     // Loopbacks & Pull-ups
     assign rx_in = tx_out;
-    assign (pull1, pull0) sda = 1'b1;
-
-    // Simple I2C Slave Model for ACKing
-    logic sda_drv;
-    assign sda = sda_drv ? 1'b0 : 1'bz;
-
-    initial begin
-        sda_drv = 1'b0;
-
-        forever begin
-            @(negedge sda);
-            if (rst_n && scl === 1'b1) begin
-                repeat (8) @(posedge scl);
-                @(negedge scl);
-                sda_drv = 1'b1;
-
-                @(negedge scl);
-                sda_drv = 1'b0;
-
-                repeat (8) @(posedge scl);
-                @(negedge scl);
-                sda_drv = 1'b1;
-
-                @(negedge scl);
-                sda_drv = 1'b0;
-            end
-        end
-    end
+    assign (pull1, pull0) i2c_vif.sda = 1'b1;
 
     axi4_lite_subsystem dut (
         .s_axi(axi_if.slave),
@@ -68,8 +40,8 @@ module tb_top;
         .mosi(spi_vif.mosi),
         .sclk(spi_vif.sclk),
         .cs_n(spi_vif.cs_n),
-        .scl(scl),
-        .sda(sda),
+        .scl(i2c_vif.scl),
+        .sda(i2c_vif.sda),
         .tx_out(tx_out),
         .rx_in(rx_in)
     );
@@ -84,7 +56,7 @@ module tb_top;
     bind uart_regs       uart_regs_sva    u_uart_regs_sva    (.*);
 
     initial begin
-        static test_smoke t = new(axi_if, spi_vif);
+        static test_smoke t = new(axi_if, spi_vif, i2c_vif);
         t.run();
 
         $display("==============================================");

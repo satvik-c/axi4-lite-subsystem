@@ -12,7 +12,8 @@ typedef enum {
 class subsystem_cov;
 
     mailbox #(axi_txn) mon2cov;
-    mailbox #(spi_txn) slv2cov;
+    mailbox #(spi_txn) spi2cov;
+    mailbox #(i2c_txn) i2c2cov;
 
     covergroup cg_axi with function sample(axi_txn txn_axi, arrival_order_e order, spacing_e space);
 
@@ -97,11 +98,46 @@ class subsystem_cov;
 
     endgroup
 
-    function new (mailbox #(axi_txn) mon2cov, mailbox #(spi_txn) slv2cov);
+    covergroup cg_i2c with function sample(i2c_txn txn_i2c);
+        
+        cp_rw_n : coverpoint txn_i2c.rw_n_expected {
+            bins write = { 0 };
+            bins read = { 1 };
+        }
+
+        cp_ack : coverpoint txn_i2c.nack {
+            bins ack = { 0 };
+            bins nack = { 1 };
+        }
+
+        cp_txdata : coverpoint txn_i2c.txdata_expected iff (!txn_i2c.rw_n_sampled) {
+            bins zeros = { 8'h00 };
+            bins ones = { 8'hFF };
+            bins alt1 = { 8'h55 };
+            bins alt2 = { 8'hAA };
+            bins others = default;
+        }
+
+        cp_rxdata : coverpoint txn_i2c.rxdata iff (txn_i2c.rw_n_sampled) {
+            bins zeros = { 8'h00 };
+            bins ones = { 8'hFF };
+            bins alt1 = { 8'h55 };
+            bins alt2 = { 8'hAA };
+            bins others = default;
+        }
+
+        cx_rw_n_ack : cross cp_rw_n, cp_ack;
+
+    endgroup
+    
+
+    function new (mailbox #(axi_txn) mon2cov, mailbox #(spi_txn) spi2cov, mailbox #(i2c_txn) i2c2cov);
         this.mon2cov = mon2cov;
-        this.slv2cov = slv2cov;
+        this.spi2cov = spi2cov;
+        this.i2c2cov = i2c2cov;
         cg_axi = new();
         cg_spi = new();
+        cg_i2c = new();
     endfunction
 
     function void print();
@@ -130,6 +166,13 @@ class subsystem_cov;
         $display("   cx_cpol_cpha     : %0.2f%%", cg_spi.cx_cpol_cpha.get_coverage());
         $display("   cx_cpha_mosi     : %0.2f%%", cg_spi.cx_cpha_mosi.get_coverage());
         $display("   cx_cpha_miso     : %0.2f%%", cg_spi.cx_cpha_miso.get_coverage());
+        $display("----------------------------------------------");
+        $display(" I2C");
+        $display("   cp_rw_n          : %0.2f%%", cg_i2c.cp_rw_n.get_coverage());
+        $display("   cp_ack           : %0.2f%%", cg_i2c.cp_ack.get_coverage());
+        $display("   cp_txdata        : %0.2f%%", cg_i2c.cp_txdata.get_coverage());
+        $display("   cp_rxdata        : %0.2f%%", cg_i2c.cp_rxdata.get_coverage());
+        $display("   cx_rw_n_ack      : %0.2f%%", cg_i2c.cx_rw_n_ack.get_coverage());
         $display("==============================================");
     endfunction
 
@@ -153,11 +196,19 @@ class subsystem_cov;
                 classify(txn_axi, order, space);
                 cg_axi.sample(txn_axi, order, space);
             end
+
             forever begin
                 spi_txn txn_spi;
 
-                slv2cov.get(txn_spi);
+                spi2cov.get(txn_spi);
                 cg_spi.sample(txn_spi);
+            end
+
+            forever begin
+                i2c_txn txn_i2c;
+
+                i2c2cov.get(txn_i2c);
+                cg_i2c.sample(txn_i2c);
             end
         join
     endtask

@@ -3,38 +3,40 @@ class spi_slave;
     virtual spi_if.slave vif;
     axi_reg_model reg_model;
 
-    mailbox #(spi_txn) test2slv;
-    mailbox #(spi_txn) slv2scb;
-    mailbox #(spi_txn) slv2cov;
+    mailbox #(spi_txn) test2spi;
+    mailbox #(spi_txn) spi2scb;
+    mailbox #(spi_txn) spi2cov;
 
     function new (
         virtual spi_if.slave vif,
         axi_reg_model reg_model,
-        mailbox #(spi_txn) test2slv,
-        mailbox #(spi_txn) slv2scb,
-        mailbox #(spi_txn) slv2cov
+        mailbox #(spi_txn) test2spi,
+        mailbox #(spi_txn) spi2scb,
+        mailbox #(spi_txn) spi2cov
     );
         this.vif = vif;
         this.reg_model = reg_model;
-        this.test2slv = test2slv;
-        this.slv2scb = slv2scb;
-        this.slv2cov = slv2cov;
+        this.test2spi = test2spi;
+        this.spi2scb = spi2scb;
+        this.spi2cov = spi2cov;
     endfunction
 
     task run();
         forever begin
             spi_txn txn;
-            logic drive_sclk_val, sample_sclk_val;
-            test2slv.get(txn);
+            logic drive_sclk_val;
+            logic sample_sclk_val;
+
+            test2spi.get(txn);
+            
+            drive_sclk_val = txn.cpol ^ txn.cpha;
+            sample_sclk_val = ~(txn.cpol ^ txn.cpha);
+            
+            @(negedge vif.cs_n);
             txn.cpol = reg_model.spi_cpol;
             txn.cpha = reg_model.spi_cpha;
             txn.mosi_expected = reg_model.spi_txdata;
-
-            drive_sclk_val = txn.cpol ^ txn.cpha;
-            sample_sclk_val = ~(txn.cpol ^ txn.cpha);
-
-            @(negedge vif.cs_n);
-
+            
             fork
                 begin
                     if (txn.cpha == 0) vif.miso = txn.miso[7];
@@ -61,8 +63,8 @@ class spi_slave;
                 end
             join
 
-            slv2scb.put(txn);
-            slv2cov.put(txn);
+            spi2scb.put(txn);
+            spi2cov.put(txn);
         end
     endtask;
 
