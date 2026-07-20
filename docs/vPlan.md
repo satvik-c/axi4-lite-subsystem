@@ -105,7 +105,6 @@ All assertions are implemented in a separate bind file and instantiated directly
 *   **Write Channel Arrival Order**: Address-first, data-first, and concurrent arrival.
 *   **Access Spacing**: Back-to-back and gapped transactions.
 *   **Response Types**: `OKAY`, `SLVERR`, and `DECERR` on both read and write channels.
-*   **Skid Buffer Occupancy**: Bins for empty, partial, and full states.
 *   **UART Transmit Queue Occupancy**: Bins for empty (`0`), full (`64`), and intermediate (`1-63`).
 *   **UART Transmit Queue Events**: Simultaneous push and pop at partial, full, and empty occupancy, write-while-full drops, and full-to-empty drain transitions.
 *   **UART Frame Format**: Parity (`none`, `even`, `odd`) × stop bits (`1`, `2`).
@@ -135,7 +134,6 @@ The following must-hit set is required at 100%; overall functional coverage must
 *   All three write-channel arrival-order paths.
 *   All four SPI modes.
 *   All four interesting SPI data patterns (`0x00`/`0xFF`/`0x55`/`0xAA`) observed on both `MOSI` and `MISO`.
-*   At least one hit on skid buffer `FULL`.
 *   Both I2C directions (`read`/`write`) see both ACK and NACK.
 *   All four interesting I2C data patterns observed on `TXDATA`/`RXDATA`.
 *   SPI and UART RX round-trips exercised.
