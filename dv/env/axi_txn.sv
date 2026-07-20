@@ -15,6 +15,23 @@ class axi_txn;
     logic [31:0] rdata;
     logic [1:0] resp;
 
+    function new(logic is_write = 0, logic [11:0] addr = 0,
+                 logic [31:0] wdata = 0, logic [3:0] wstrb = 0, logic [2:0] prot = 0,
+                 int awvalid_delay = 0, int wvalid_delay = 0, int bready_delay = 0,
+                 int arvalid_delay = 0, int rready_delay = 0, int gap_delay = 0);
+        this.is_write = is_write;
+        this.addr = addr;
+        this.wdata = wdata;
+        this.wstrb = wstrb;
+        this.prot = prot;
+        this.awvalid_delay = awvalid_delay;
+        this.wvalid_delay = wvalid_delay;
+        this.bready_delay = bready_delay;
+        this.arvalid_delay = arvalid_delay;
+        this.rready_delay = rready_delay;
+        this.gap_delay = gap_delay;
+    endfunction
+
     constraint addr_range {
         addr[11:8] dist {
             [4'h0 : 4'h2] :/ 70,
