@@ -17,6 +17,8 @@ class subsystem_cov;
     mailbox #(uart_rx_txn) rx2cov;
     mailbox #(uart_tx_txn) tx2cov;
 
+    logic fifo_seen_full;
+
     covergroup cg_axi with function sample(axi_txn txn_axi, arrival_order_e order, spacing_e space);
 
         cp_txn_type : coverpoint txn_axi.is_write {
@@ -178,7 +180,37 @@ class subsystem_cov;
         cx_parity_stop : cross cp_parity, cp_stop_bits;
 
     endgroup
-    
+
+    covergroup cg_fifo with function sample(uart_fifo_txn txn_fifo, logic complete);
+        
+        cp_occupancy : coverpoint txn_fifo.occupancy {
+            bins empty = { 0 };
+            bins full = { 64 };
+            bins intermediate = {[1 : 63]};
+        }
+
+        cp_event : coverpoint txn_fifo.event_t {
+            bins push = { PUSH };
+            bins pop = { POP };
+            bins drop = { DROP };
+        }
+
+        cp_concurrent : coverpoint txn_fifo.concurrent iff (txn_fifo.event_t != DROP) {
+            bins separate = { 0 };
+            bins concurrent = { 1 };
+        }
+
+        cp_full_to_empty : coverpoint complete {
+            bins not_complete = { 0 };
+            bins complete = { 1 };
+        }
+
+        cx_occupancy_concurrent : cross cp_occupancy, cp_concurrent {
+            ignore_bins skip_separate = binsof(cp_concurrent.separate);
+        }
+
+    endgroup
+
 
     function new (mailbox #(axi_txn) mon2cov, mailbox #(spi_txn) spi2cov, mailbox #(i2c_txn) i2c2cov, mailbox #(uart_rx_txn) rx2cov, mailbox #(uart_tx_txn) tx2cov);
         this.mon2cov = mon2cov;
@@ -192,6 +224,7 @@ class subsystem_cov;
         cg_i2c = new();
         cg_rx = new();
         cg_tx = new();
+        cg_fifo = new();
     endfunction
 
     function void print();
@@ -239,6 +272,13 @@ class subsystem_cov;
         $display("   cp_stop_bits     : %0.2f%%", cg_tx.cp_stop_bits.get_coverage());
         $display("   cp_data          : %0.2f%%", cg_tx.cp_data.get_coverage());
         $display("   cx_parity_stop   : %0.2f%%", cg_tx.cx_parity_stop.get_coverage());
+        $display("----------------------------------------------");
+        $display(" UART FIFO");
+        $display("   cp_occupancy     : %0.2f%%", cg_fifo.cp_occupancy.get_coverage());
+        $display("   cp_event         : %0.2f%%", cg_fifo.cp_event.get_coverage());
+        $display("   cp_concurrent    : %0.2f%%", cg_fifo.cp_concurrent.get_coverage());
+        $display("   cp_full_to_empty : %0.2f%%", cg_fifo.cp_full_to_empty.get_coverage());
+        $display("   cx_occ_concurrent: %0.2f%%", cg_fifo.cx_occupancy_concurrent.get_coverage());
         $display("==============================================");
     endfunction
 
@@ -249,6 +289,15 @@ class subsystem_cov;
 
         if (txn.gap_delay == 0) space = BACK_TO_BACK;
         else space = GAPPED;
+    endfunction
+
+    function void full_to_empty(input uart_fifo_txn txn, output logic complete);
+        complete = 0;
+        if (txn.occupancy == 64) fifo_seen_full = 1;
+        if (txn.occupancy == 0 && fifo_seen_full) begin
+            complete = 1;
+            fifo_seen_full = 0;
+        end
     endfunction
 
     task run();
@@ -285,6 +334,15 @@ class subsystem_cov;
                 uart_tx_txn txn_tx;
                 tx2cov.get(txn_tx);
                 cg_tx.sample(txn_tx);
+            end
+
+            forever begin
+                logic complete;
+
+                uart_fifo_txn txn_fifo;
+                uart_fifo_model::fifo2cov.get(txn_fifo);
+                full_to_empty(txn_fifo, complete);
+                cg_fifo.sample(txn_fifo, complete);
             end
         join
     endtask

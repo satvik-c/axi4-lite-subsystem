@@ -49,6 +49,7 @@ module tb_top;
     bind axi4_lite_subsystem protocol_sva u_protocol_sva (.vif(s_axi));
     bind skid_buffer     skid_buffer_sva  u_skid_buffer_sva  (.*);
     bind uart_fifo       uart_fifo_sva    u_uart_fifo_sva    (.*);
+    bind uart_fifo       uart_fifo_tap    u_uart_fifo_tap    (.*);
     bind uart_wrapper    uart_wrapper_sva u_uart_wrapper_sva (.*);
     bind address_decoder decoder_sva      u_decoder_sva      (.*);
     bind spi_regs        spi_regs_sva     u_spi_regs_sva     (.*);

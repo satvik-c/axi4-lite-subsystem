@@ -80,9 +80,32 @@ class scoreboard;
             end
 
             forever begin
+                logic [7:0] expected;
+
                 uart_tx_txn txn_tx;
                 tx2scb.get(txn_tx);
-                // TODO: check txn_tx against UART TX queue reference model
+
+                if (uart_fifo_model::unconfirmed_pending()) begin
+                    expected = uart_fifo_model::get_next_unconfirmed();
+                    if (txn_tx.data_sampled != expected) begin
+                        $error("[uart tx] data mismatch: expected=0x%0h, got=0x%0h", expected, txn_tx.data_sampled);
+                        errors++;
+                    end
+                end else begin
+                    $error("[uart tx] byte observed on wire with no corresponding FIFO pop recorded (desync): data=0x%0h", txn_tx.data_sampled);
+                    errors++;
+                end
+
+                if (txn_tx.parity_en) begin
+                    logic parity_expected;
+                    parity_expected = (txn_tx.parity_mode) ? ^txn_tx.data_sampled : ~^txn_tx.data_sampled;
+                    if (parity_expected != txn_tx.parity_sampled) begin
+                        $error("[uart tx] parity mismatch: expected=%0d, got=%0d", parity_expected, txn_tx.parity_sampled);
+                        errors++;
+                    end
+                end
+
+                count++;
             end
 
             forever begin

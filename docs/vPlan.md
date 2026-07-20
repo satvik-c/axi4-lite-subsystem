@@ -106,7 +106,7 @@ All assertions are implemented in a separate bind file and instantiated directly
 *   **Access Spacing**: Back-to-back and gapped transactions.
 *   **Response Types**: `OKAY`, `SLVERR`, and `DECERR` on both read and write channels.
 *   **Skid Buffer Occupancy**: Bins for empty, partial, and full states.
-*   **UART Transmit Queue Occupancy**: Bins for empty (`0`), full (`64`), and intermediate levels (`1-16`, `17-44`, `45-63`).
+*   **UART Transmit Queue Occupancy**: Bins for empty (`0`), full (`64`), and intermediate (`1-63`).
 *   **UART Transmit Queue Events**: Simultaneous push and pop at partial, full, and empty occupancy, write-while-full drops, and full-to-empty drain transitions.
 *   **UART Frame Format**: Parity (`none`, `even`, `odd`) × stop bits (`1`, `2`).
 *   **SPI CPOL**: Clock idle level, both polarities.

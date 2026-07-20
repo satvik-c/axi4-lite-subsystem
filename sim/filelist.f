@@ -41,6 +41,11 @@ dv/env/uart_rx_txn.sv
 # UART TX monitor
 dv/env/uart_tx_txn.sv
 
+# UART FIFO queue model
+dv/env/uart_fifo_txn.sv
+dv/env/uart_fifo_model.sv
+dv/env/uart_fifo_tap.sv
+
 # DV components
 dv/env/axi_txn.sv
 dv/env/axi_reg_model.sv
