@@ -58,6 +58,7 @@ class axi_driver;
         end while (!vif.drv.BVALID);
         vif.drv.BREADY <= 0;
         txn.resp = vif.drv.BRESP;
+        ->txn.done;
     endtask
 
     task drive_read(axi_txn txn);
@@ -82,6 +83,7 @@ class axi_driver;
         vif.drv.RREADY <= 0;
         txn.rdata = vif.drv.RDATA;
         txn.resp  = vif.drv.RRESP;
+        ->txn.done;
     endtask
 
     task run();
