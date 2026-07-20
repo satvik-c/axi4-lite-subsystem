@@ -11,4 +11,14 @@ class i2c_txn;
     logic rw_n_sampled;
     logic [7:0] txdata_sampled;
 
+    constraint rxdata_range {
+        rxdata dist {
+            8'h00 := 20,
+            8'hFF := 20,
+            8'h55 := 20,
+            8'hAA := 20,
+            [8'h01 : 8'hFE] :/ 20
+        };
+    }
+
 endclass

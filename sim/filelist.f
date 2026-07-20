@@ -34,6 +34,13 @@ dv/env/spi_txn.sv
 dv/env/i2c_if.sv
 dv/env/i2c_txn.sv
 
+# UART RX driver
+dv/env/uart_if.sv
+dv/env/uart_rx_txn.sv
+
+# UART TX monitor
+dv/env/uart_tx_txn.sv
+
 # DV components
 dv/env/axi_txn.sv
 dv/env/axi_reg_model.sv
@@ -43,6 +50,8 @@ dv/env/scoreboard.sv
 
 dv/env/spi_slave.sv
 dv/env/i2c_slave.sv
+dv/env/uart_rx_driver.sv
+dv/env/uart_tx_monitor.sv
 
 # DV coverage
 dv/cov/subsystem_cov.sv

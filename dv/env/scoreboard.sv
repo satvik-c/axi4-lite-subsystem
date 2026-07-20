@@ -2,19 +2,20 @@ class scoreboard;
 
     mailbox #(axi_txn) mon2scb;
     mailbox mon2scb_rst;
-
     mailbox #(spi_txn) spi2scb;
-
     mailbox #(i2c_txn) i2c2scb;
+    mailbox #(uart_tx_txn) tx2scb;
 
     axi_reg_model reg_model;
     int count, errors;
 
-    function new(mailbox #(axi_txn) mon2scb, mailbox mon2scb_rst, mailbox #(spi_txn) spi2scb, mailbox #(i2c_txn) i2c2scb);
+    function new(mailbox #(axi_txn) mon2scb, mailbox mon2scb_rst, mailbox #(spi_txn) spi2scb, mailbox #(i2c_txn) i2c2scb, mailbox #(uart_tx_txn) tx2scb);
         this.mon2scb = mon2scb;
         this.mon2scb_rst = mon2scb_rst;
         this.spi2scb = spi2scb;
         this.i2c2scb = i2c2scb;
+        this.tx2scb = tx2scb;
+        
         reg_model = new();
         count = 0;
         errors = 0;
@@ -76,6 +77,12 @@ class scoreboard;
                 end
 
                 count++;
+            end
+
+            forever begin
+                uart_tx_txn txn_tx;
+                tx2scb.get(txn_tx);
+                // TODO: check txn_tx against UART TX queue reference model
             end
 
             forever begin

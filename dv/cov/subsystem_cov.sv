@@ -14,6 +14,8 @@ class subsystem_cov;
     mailbox #(axi_txn) mon2cov;
     mailbox #(spi_txn) spi2cov;
     mailbox #(i2c_txn) i2c2cov;
+    mailbox #(uart_rx_txn) rx2cov;
+    mailbox #(uart_tx_txn) tx2cov;
 
     covergroup cg_axi with function sample(axi_txn txn_axi, arrival_order_e order, spacing_e space);
 
@@ -129,15 +131,67 @@ class subsystem_cov;
         cx_rw_n_ack : cross cp_rw_n, cp_ack;
 
     endgroup
+
+    covergroup cg_rx with function sample(uart_rx_txn txn_rx);
+
+        cp_parity : coverpoint {txn_rx.parity_en, txn_rx.parity_mode} {
+            wildcard bins none = { 2'b0? };
+            bins even = { 2'b10 };
+            bins odd = { 2'b11 };
+        }
+
+        cp_stop_bits : coverpoint txn_rx.stop_bits {
+            bins one = { 0 };
+            bins two = { 1 };
+        }
+
+        cp_perr : coverpoint txn_rx.inject_perr iff (txn_rx.parity_en) {
+            bins no_error = { 0 };
+            bins error = { 1 };
+        }
+
+        cx_parity_stop : cross cp_parity, cp_stop_bits;
+
+    endgroup
+
+    covergroup cg_tx with function sample(uart_tx_txn txn_tx);
+
+        cp_parity : coverpoint {txn_tx.parity_en, txn_tx.parity_mode} {
+            wildcard bins none = { 2'b0? };
+            bins even = { 2'b10 };
+            bins odd = { 2'b11 };
+        }
+
+        cp_stop_bits : coverpoint txn_tx.stop_bits {
+            bins one = { 0 };
+            bins two = { 1 };
+        }
+
+        cp_data : coverpoint txn_tx.data_sampled {
+            bins zeros = { 8'h00 };
+            bins ones = { 8'hFF };
+            bins alt1 = { 8'h55 };
+            bins alt2 = { 8'hAA };
+            bins others = default;
+        }
+
+        cx_parity_stop : cross cp_parity, cp_stop_bits;
+
+    endgroup
     
 
-    function new (mailbox #(axi_txn) mon2cov, mailbox #(spi_txn) spi2cov, mailbox #(i2c_txn) i2c2cov);
+    function new (mailbox #(axi_txn) mon2cov, mailbox #(spi_txn) spi2cov, mailbox #(i2c_txn) i2c2cov, mailbox #(uart_rx_txn) rx2cov, mailbox #(uart_tx_txn) tx2cov);
         this.mon2cov = mon2cov;
         this.spi2cov = spi2cov;
         this.i2c2cov = i2c2cov;
+        this.rx2cov = rx2cov;
+        this.tx2cov = tx2cov;
+
         cg_axi = new();
         cg_spi = new();
         cg_i2c = new();
+        cg_rx = new();
+        cg_tx = new();
     endfunction
 
     function void print();
@@ -173,6 +227,18 @@ class subsystem_cov;
         $display("   cp_txdata        : %0.2f%%", cg_i2c.cp_txdata.get_coverage());
         $display("   cp_rxdata        : %0.2f%%", cg_i2c.cp_rxdata.get_coverage());
         $display("   cx_rw_n_ack      : %0.2f%%", cg_i2c.cx_rw_n_ack.get_coverage());
+        $display("----------------------------------------------");
+        $display(" UART RX");
+        $display("   cp_parity        : %0.2f%%", cg_rx.cp_parity.get_coverage());
+        $display("   cp_stop_bits     : %0.2f%%", cg_rx.cp_stop_bits.get_coverage());
+        $display("   cp_perr          : %0.2f%%", cg_rx.cp_perr.get_coverage());
+        $display("   cx_parity_stop   : %0.2f%%", cg_rx.cx_parity_stop.get_coverage());
+        $display("----------------------------------------------");
+        $display(" UART TX");
+        $display("   cp_parity        : %0.2f%%", cg_tx.cp_parity.get_coverage());
+        $display("   cp_stop_bits     : %0.2f%%", cg_tx.cp_stop_bits.get_coverage());
+        $display("   cp_data          : %0.2f%%", cg_tx.cp_data.get_coverage());
+        $display("   cx_parity_stop   : %0.2f%%", cg_tx.cx_parity_stop.get_coverage());
         $display("==============================================");
     endfunction
 
@@ -188,10 +254,10 @@ class subsystem_cov;
     task run();
         fork
             forever begin
-                axi_txn txn_axi;
                 arrival_order_e order;
                 spacing_e space;
                 
+                axi_txn txn_axi;
                 mon2cov.get(txn_axi);
                 classify(txn_axi, order, space);
                 cg_axi.sample(txn_axi, order, space);
@@ -199,16 +265,26 @@ class subsystem_cov;
 
             forever begin
                 spi_txn txn_spi;
-
                 spi2cov.get(txn_spi);
                 cg_spi.sample(txn_spi);
             end
 
             forever begin
                 i2c_txn txn_i2c;
-
                 i2c2cov.get(txn_i2c);
                 cg_i2c.sample(txn_i2c);
+            end
+
+            forever begin
+                uart_rx_txn txn_rx;
+                rx2cov.get(txn_rx);
+                cg_rx.sample(txn_rx);
+            end
+
+            forever begin
+                uart_tx_txn txn_tx;
+                tx2cov.get(txn_tx);
+                cg_tx.sample(txn_tx);
             end
         join
     endtask

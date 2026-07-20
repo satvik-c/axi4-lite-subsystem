@@ -2,12 +2,14 @@
 
 module tb_top;
 
+    localparam time CLK_PERIOD = 10ns;
+
     logic clk;
     logic rst_n;
 
     initial begin
         clk = 0;
-        forever #5 clk = ~clk;
+        forever #(CLK_PERIOD/2) clk = ~clk;
     end
 
     initial begin
@@ -27,11 +29,9 @@ module tb_top;
     // Peripheral Pins
     spi_if spi_vif();
     i2c_if i2c_vif();
-    logic tx_out;
-    logic rx_in;
+    uart_if uart_vif();
 
     // Loopbacks & Pull-ups
-    assign rx_in = tx_out;
     assign (pull1, pull0) i2c_vif.sda = 1'b1;
 
     axi4_lite_subsystem dut (
@@ -42,8 +42,8 @@ module tb_top;
         .cs_n(spi_vif.cs_n),
         .scl(i2c_vif.scl),
         .sda(i2c_vif.sda),
-        .tx_out(tx_out),
-        .rx_in(rx_in)
+        .tx_out(uart_vif.tx_out),
+        .rx_in(uart_vif.rx_in)
     );
 
     bind axi4_lite_subsystem protocol_sva u_protocol_sva (.vif(s_axi));
@@ -56,7 +56,7 @@ module tb_top;
     bind uart_regs       uart_regs_sva    u_uart_regs_sva    (.*);
 
     initial begin
-        static test_smoke t = new(axi_if, spi_vif, i2c_vif);
+        static test_smoke t = new(axi_if, spi_vif, i2c_vif, uart_vif, CLK_PERIOD);
         t.run();
 
         $display("==============================================");
