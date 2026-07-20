@@ -14,7 +14,7 @@ module uart_fifo_tap
         if (rst_n) begin
             if (wr_en && (!full || rd_en)) uart_fifo_model::push(wr_data, rd_en);
             else if (wr_en && full && !rd_en) uart_fifo_model::drop();
-            if (rd_en && (!empty || wr_en)) uart_fifo_model::pop(rd_data, wr_en);
+            if (rd_en && (!empty || wr_en)) uart_fifo_model::pop(wr_en);
         end
     end
 

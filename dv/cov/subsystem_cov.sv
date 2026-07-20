@@ -1,3 +1,5 @@
+import regs_pkg::*;
+
 typedef enum {
     ADDR_FIRST,
     DATA_FIRST,
@@ -54,6 +56,42 @@ class subsystem_cov;
             bins okay = { 2'b00 };
             bins slverr = { 2'b10 };
             bins decerr = { 2'b11 };
+        }
+
+        cp_spi_rxvalid_observed : coverpoint txn_axi.rdata[SPI_STATUS_RXVALID]
+            iff (!txn_axi.is_write && txn_axi.addr[11:8] == 4'h0 && txn_axi.addr[7:2] == SPI_STATUS) {
+            bins clear = { 0 };
+            bins seen  = { 1 };
+        }
+
+        cp_i2c_rxvalid_observed : coverpoint txn_axi.rdata[I2C_STATUS_RXVALID]
+            iff (!txn_axi.is_write && txn_axi.addr[11:8] == 4'h1 && txn_axi.addr[7:2] == I2C_STATUS) {
+            bins clear = { 0 };
+            bins seen  = { 1 };
+        }
+
+        cp_i2c_nack_observed : coverpoint txn_axi.rdata[I2C_STATUS_NACK]
+            iff (!txn_axi.is_write && txn_axi.addr[11:8] == 4'h1 && txn_axi.addr[7:2] == I2C_STATUS) {
+            bins clear = { 0 };
+            bins seen  = { 1 };
+        }
+
+        cp_uart_rxvalid_observed : coverpoint txn_axi.rdata[UART_STATUS_RXVALID]
+            iff (!txn_axi.is_write && txn_axi.addr[11:8] == 4'h2 && txn_axi.addr[7:2] == UART_STATUS) {
+            bins clear = { 0 };
+            bins seen  = { 1 };
+        }
+
+        cp_uart_rxoverrun_observed : coverpoint txn_axi.rdata[UART_STATUS_RXOVERRUN]
+            iff (!txn_axi.is_write && txn_axi.addr[11:8] == 4'h2 && txn_axi.addr[7:2] == UART_STATUS) {
+            bins clear = { 0 };
+            bins seen  = { 1 };
+        }
+
+        cp_uart_rxperr_observed : coverpoint txn_axi.rdata[UART_STATUS_RXPERR]
+            iff (!txn_axi.is_write && txn_axi.addr[11:8] == 4'h2 && txn_axi.addr[7:2] == UART_STATUS) {
+            bins clear = { 0 };
+            bins seen  = { 1 };
         }
 
         cx_type_reg     : cross cp_txn_type, cp_reg_hitmap;
@@ -244,6 +282,12 @@ class subsystem_cov;
         $display("   cx_type_resp     : %0.2f%%", cg_axi.cx_type_resp.get_coverage());
         $display("   cx_order_resp    : %0.2f%%", cg_axi.cx_order_resp.get_coverage());
         $display("   cx_spacing_type  : %0.2f%%", cg_axi.cx_spacing_type.get_coverage());
+        $display("   cp_spi_rxvalid_observed    : %0.2f%%", cg_axi.cp_spi_rxvalid_observed.get_coverage());
+        $display("   cp_i2c_rxvalid_observed    : %0.2f%%", cg_axi.cp_i2c_rxvalid_observed.get_coverage());
+        $display("   cp_i2c_nack_observed       : %0.2f%%", cg_axi.cp_i2c_nack_observed.get_coverage());
+        $display("   cp_uart_rxvalid_observed   : %0.2f%%", cg_axi.cp_uart_rxvalid_observed.get_coverage());
+        $display("   cp_uart_rxoverrun_observed : %0.2f%%", cg_axi.cp_uart_rxoverrun_observed.get_coverage());
+        $display("   cp_uart_rxperr_observed    : %0.2f%%", cg_axi.cp_uart_rxperr_observed.get_coverage());
         $display("----------------------------------------------");
         $display(" SPI");
         $display("   cp_cpol          : %0.2f%%", cg_spi.cp_cpol.get_coverage());

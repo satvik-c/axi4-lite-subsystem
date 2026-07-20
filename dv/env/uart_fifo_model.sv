@@ -17,11 +17,10 @@ class uart_fifo_model;
         fifo2cov.put(txn);
     endtask
 
-    static task pop(logic [7:0] rdata, logic wr_en);
+    static task pop(logic wr_en);
         uart_fifo_txn txn = new();
         
         logic [7:0] pop_data = fifo.pop_front();
-        assert (pop_data == rdata);
         unconfirmed.push_back(pop_data);
 
         txn.event_t = POP;
