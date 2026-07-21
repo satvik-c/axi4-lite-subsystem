@@ -10,7 +10,7 @@ class test_peripheral_roundtrip;
     logic [31:0] wdata;
 
     localparam SPI_CLK_DIV = 10;
-    localparam I2C_CLK_DIV = 100;
+    localparam I2C_CLK_DIV = 20;
     localparam BAUD_DIV = 32;
 
     function new(env e);
@@ -143,6 +143,38 @@ class test_peripheral_roundtrip;
                 end
             end
         end
+
+        txn_rx = new();
+        txn_rx.inject_perr = 0;
+        txn_rx.data = 8'h72;
+        e.test2rx.put(txn_rx);
+
+        while (1) begin
+            #(14 * BAUD_DIV * e.clk_period);
+
+            txn = new(0, 4'h2, UART_STATUS);
+            e.test2drv.put(txn);
+            wait (txn.done.triggered);
+            if (txn.rdata[UART_STATUS_RXVALID] || txn.rdata[UART_STATUS_RXPERR]) break;
+        end
+
+        txn_rx = new();
+        txn_rx.inject_perr = 0;
+        txn_rx.data = 8'h72;
+        e.test2rx.put(txn_rx);
+
+        while (1) begin
+            #(14 * BAUD_DIV * e.clk_period);
+
+            txn = new(0, 4'h2, UART_STATUS);
+            e.test2drv.put(txn);
+            wait (txn.done.triggered);
+            if (txn.rdata[UART_STATUS_RXOVERRUN]) break;
+        end
+
+        txn = new(0, 4'h2, UART_RXDATA);
+        e.test2drv.put(txn);
+        wait(txn.done.triggered);
 
     endtask
 
