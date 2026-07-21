@@ -27,41 +27,41 @@ rtl/axi/top_regs.sv
 rtl/axi4_lite_subsystem.sv
 
 # Peripheral register taps (live DUT config state for agents, bypasses reg_model)
-dv/env/spi_regs_tap.sv
-dv/env/i2c_regs_tap.sv
-dv/env/uart_regs_tap.sv
+dv/env/spi/spi_regs_tap.sv
+dv/env/i2c/i2c_regs_tap.sv
+dv/env/uart/uart_regs_tap.sv
 
 # SPI slave
-dv/env/spi_if.sv
-dv/env/spi_txn.sv
+dv/env/spi/spi_if.sv
+dv/env/spi/spi_txn.sv
 
 # I2C slave
-dv/env/i2c_if.sv
-dv/env/i2c_txn.sv
+dv/env/i2c/i2c_if.sv
+dv/env/i2c/i2c_txn.sv
 
 # UART RX driver
-dv/env/uart_if.sv
-dv/env/uart_rx_txn.sv
+dv/env/uart/uart_if.sv
+dv/env/uart/uart_rx_txn.sv
 
 # UART TX monitor
-dv/env/uart_tx_txn.sv
+dv/env/uart/uart_tx_txn.sv
 
 # UART FIFO queue model
-dv/env/uart_fifo_txn.sv
-dv/env/uart_fifo_model.sv
-dv/env/uart_fifo_tap.sv
+dv/env/uart/uart_fifo_txn.sv
+dv/env/uart/uart_fifo_model.sv
+dv/env/uart/uart_fifo_tap.sv
 
 # DV components
-dv/env/axi_txn.sv
-dv/env/axi_reg_model.sv
-dv/env/axi_driver.sv
-dv/env/axi_monitor.sv
+dv/env/axi/axi_txn.sv
+dv/env/axi/axi_reg_model.sv
+dv/env/axi/axi_driver.sv
+dv/env/axi/axi_monitor.sv
 dv/env/scoreboard.sv
 
-dv/env/spi_slave.sv
-dv/env/i2c_slave.sv
-dv/env/uart_rx_driver.sv
-dv/env/uart_tx_monitor.sv
+dv/env/spi/spi_slave.sv
+dv/env/i2c/i2c_slave.sv
+dv/env/uart/uart_rx_driver.sv
+dv/env/uart/uart_tx_monitor.sv
 
 # DV coverage
 dv/cov/subsystem_cov.sv
