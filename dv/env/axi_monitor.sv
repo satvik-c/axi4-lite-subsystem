@@ -65,7 +65,7 @@ class axi_monitor;
             @(vif.mon);
         end while (!(vif.mon.BREADY && vif.mon.BVALID));
         write_txn.resp = vif.mon.BRESP;
-        write_txn.gap_delay = (awvalid_cycle < wvalid_cycle ? awvalid_cycle : wvalid_cycle) - last_accepted_cycle;
+        write_txn.gap_delay = (awvalid_cycle < wvalid_cycle ? awvalid_cycle : wvalid_cycle) - last_accepted_cycle - 2;
 
         last_accepted_cycle = cycle_count;
 
@@ -95,7 +95,7 @@ class axi_monitor;
         end while (!(vif.mon.RREADY && vif.mon.RVALID));
         read_txn.rdata = vif.mon.RDATA;
         read_txn.resp = vif.mon.RRESP;
-        read_txn.gap_delay = arvalid_cycle - last_accepted_cycle;
+        read_txn.gap_delay = arvalid_cycle - last_accepted_cycle - 2;
 
         last_accepted_cycle = cycle_count;
 
