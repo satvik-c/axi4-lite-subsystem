@@ -74,13 +74,19 @@ module uart_tx
     logic data_done;
     logic stop_done;
 
+    // Latched Configuration Registers
+    logic [15:0] baud_div_reg;
+    logic parity_en_reg;
+    logic parity_mode_reg;
+    logic stop_bits_reg;
+
 
     // ========================================================
     // DATAPATH ASSIGNMENTS
     // ========================================================
 
     assign data_done = (counter == CNT_W'(DATA_BITS - 1));
-    assign stop_done = (counter == CNT_W'(stop_bits));
+    assign stop_done = (counter == CNT_W'(stop_bits_reg));
 
 
     // ========================================================
@@ -92,7 +98,7 @@ module uart_tx
         .clk       (clk),
         .rst_n     (rst_n),
         .enable    (enable),
-        .div       (baud_div),
+        .div       (baud_div_reg),
         .baud_tick (baud_tick)
     );
 
@@ -106,6 +112,21 @@ module uart_tx
         if (!rst_n) current_state <= IDLE;
         else        current_state <= next_state;
     end
+
+    // Capture configuration parameters on transaction start
+        always_ff @(posedge clk) begin
+            if (!rst_n) begin
+                baud_div_reg    <= '0;
+                parity_en_reg   <= 0;
+                parity_mode_reg <= 0;
+                stop_bits_reg   <= 0;
+            end else if (current_state == IDLE && tx_start) begin
+                baud_div_reg    <= baud_div;
+                parity_en_reg   <= parity_en;
+                parity_mode_reg <= parity_mode;
+                stop_bits_reg   <= stop_bits;
+            end
+        end
 
     // Next-state transition combinational logic
     always_comb begin
@@ -122,7 +143,7 @@ module uart_tx
 
             DATA: begin
                 if (baud_tick && data_done) begin
-                    if (parity_en) next_state = PARITY;
+                    if (parity_en_reg) next_state = PARITY;
                     else           next_state = STOP;
                 end
             end

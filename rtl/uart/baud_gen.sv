@@ -22,14 +22,18 @@ module baud_gen
 
     // Baud Generation Counter
     logic [15:0] baud_counter;
+    logic [15:0] safe_div;
 
 
     // ========================================================
     // BAUD GENERATION LOGIC
     // ========================================================
 
+    // Clamp a zero divisor to avoid underflow below
+    assign safe_div = (div == 16'd0) ? 16'd1 : div;
+
     // Generate baud tick when counter reaches divisor
-    assign baud_tick = (baud_counter == (div - 16'd1));
+    assign baud_tick = (baud_counter >= (safe_div - 16'd1));
 
     // Baud rate counter update
     always_ff @(posedge clk) begin
