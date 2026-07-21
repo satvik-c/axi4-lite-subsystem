@@ -201,7 +201,7 @@ class scoreboard;
 
                 if (txn_tx.parity_en) begin
                     logic parity_expected;
-                    parity_expected = (txn_tx.parity_mode) ? ^txn_tx.data_sampled : ~^txn_tx.data_sampled;
+                    parity_expected = (!txn_tx.parity_mode) ? ^txn_tx.data_sampled : ~^txn_tx.data_sampled;
                     if (parity_expected != txn_tx.parity_sampled) begin
                         $error("[uart tx] parity mismatch: expected=%0d, got=%0d", parity_expected, txn_tx.parity_sampled);
                         errors++;
