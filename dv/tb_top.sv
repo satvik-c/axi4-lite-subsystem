@@ -27,8 +27,8 @@ module tb_top;
     end
 
     // Peripheral Pins
-    spi_if spi_vif();
-    i2c_if i2c_vif();
+    spi_if spi_vif(rst_n);
+    i2c_if i2c_vif(rst_n);
     uart_if uart_vif();
 
     // Loopbacks & Pull-ups
@@ -55,14 +55,50 @@ module tb_top;
     bind spi_regs        spi_regs_sva     u_spi_regs_sva     (.*);
     bind i2c_regs        i2c_regs_sva     u_i2c_regs_sva     (.*);
     bind uart_regs       uart_regs_sva    u_uart_regs_sva    (.*);
+    bind spi_regs        spi_regs_tap     u_spi_regs_tap     (.*);
+    bind i2c_regs        i2c_regs_tap     u_i2c_regs_tap     (.*);
+    bind uart_regs       uart_regs_tap    u_uart_regs_tap    (.*);
+
+    task automatic run_test(string name, env e);
+        case (name)
+            "test_register_access": begin
+                automatic test_register_access t = new(e);
+                t.run();
+            end
+            "test_arrival_order": begin
+                automatic test_arrival_order t = new(e);
+                t.run();
+            end
+            "test_fifo_stress": begin
+                automatic test_fifo_stress t = new(e);
+                t.run();
+            end
+            "test_peripheral_roundtrip": begin
+                automatic test_peripheral_roundtrip t = new(e);
+                t.run();
+            end
+            default: $fatal(1, "Unknown TEST_CLASS: %s", name);
+        endcase
+    endtask
 
     initial begin
-        static test_smoke t = new(axi_if, spi_vif, i2c_vif, uart_vif, CLK_PERIOD);
-        t.run();
+        static env e = new(axi_if, spi_vif, i2c_vif, uart_vif, CLK_PERIOD);
+        string test_name;
+        e.run();
+
+        if ($test$plusargs("RUN_ALL")) begin
+            run_test("test_register_access", e);
+            run_test("test_arrival_order", e);
+            run_test("test_fifo_stress", e);
+            run_test("test_peripheral_roundtrip", e);
+        end else begin
+            if (!$value$plusargs("TEST_CLASS=%s", test_name)) test_name = "test_register_access";
+            run_test(test_name, e);
+        end
 
         $display("==============================================");
-        $display(" Test complete: %0d errors / %0d transactions", t.e.scb.errors, t.e.scb.count);
-        t.e.cov.print();
+        $display(" Test complete: %0d errors / %0d transactions", e.scb.errors, e.scb.count);
+        e.cov.print();
 
         $finish;
     end
