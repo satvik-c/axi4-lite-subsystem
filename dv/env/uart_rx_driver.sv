@@ -26,7 +26,7 @@ class uart_rx_driver;
             txn.parity_en = uart_dut_state::parity_en;
             txn.parity_mode = uart_dut_state::parity_mode;
             txn.stop_bits = uart_dut_state::stop_bits;
-            baud_div = uart_dut_state::baud_div;
+            baud_div = (uart_dut_state::baud_div == 16'd0) ? 16'd1 : uart_dut_state::baud_div;
 
             vif.rx_in = 0;
             #(baud_div * clk_period);
