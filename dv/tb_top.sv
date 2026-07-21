@@ -7,6 +7,8 @@ module tb_top;
     logic clk;
     logic rst_n;
 
+    env e;
+
     initial begin
         clk = 0;
         forever #(CLK_PERIOD/2) clk = ~clk;
@@ -77,13 +79,17 @@ module tb_top;
                 automatic test_peripheral_roundtrip t = new(e);
                 t.run();
             end
+            "test_random_regression": begin
+                automatic test_random_regression t = new(e);
+                t.run();
+            end
             default: $fatal(1, "Unknown TEST_CLASS: %s", name);
         endcase
     endtask
 
     initial begin
-        static env e = new(axi_if, spi_vif, i2c_vif, uart_vif, CLK_PERIOD);
         string test_name;
+        e = new(axi_if, spi_vif, i2c_vif, uart_vif, CLK_PERIOD);
         e.run();
 
         if ($test$plusargs("RUN_ALL")) begin
@@ -91,6 +97,7 @@ module tb_top;
             run_test("test_arrival_order", e);
             run_test("test_fifo_stress", e);
             run_test("test_peripheral_roundtrip", e);
+            run_test("test_random_regression", e);
         end else begin
             if (!$value$plusargs("TEST_CLASS=%s", test_name)) test_name = "test_register_access";
             run_test(test_name, e);
@@ -101,6 +108,16 @@ module tb_top;
         e.cov.print();
 
         $finish;
+    end
+
+    initial begin
+        static int last_count = 0;
+        wait (e != null);
+        forever begin
+            wait (e.scb.count != last_count);
+            $display("[%0t] transaction count: %0d", $time, e.scb.count);
+            last_count = e.scb.count;
+        end
     end
 
 endmodule
