@@ -17,7 +17,7 @@ module protocol_sva
     B1_R:  assert property (valid_until_ready(vif.RVALID, vif.RREADY));
 
     property payload_stable(valid, ready, s1, s2);
-        (valid && !ready) |-> ($stable(s1) && $stable(s2));
+        (valid && !ready) |=> ($stable(s1) && $stable(s2));
     endproperty
 
     B2_AW: assert property (payload_stable(vif.AWVALID, vif.AWREADY, vif.AWADDR, vif.AWPROT));
