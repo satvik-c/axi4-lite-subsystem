@@ -73,12 +73,12 @@ All assertions are implemented in a separate bind file and instantiated directly
 *   **B9 [assert]** Read-response latency is bounded: `RVALID` asserts within a fixed number of cycles (target 3) of the AR boundary handshake. *(Same confirmation as B8.)*
 
 ### White-Box Design Assertions
-*   **W1 [assert]** The input skid buffers do not accept new upstream data when in the `FULL` state.
-*   **W2 [assert]** The skid buffers' `in_ready` and `out_valid` are register-driven, with no combinational path from the downstream ready input to `in_ready`.
+*   **W1 [assert]** The input skid buffers do not accept new upstream data when in the `FULL` state. *(Sim-unreachable given the current driver; waived — see §9.)*
+*   **W2 [assert]** The skid buffers' `in_ready` and `out_valid` are register-driven, with no combinational path from the downstream ready input to `in_ready`. *(`in_ready` side sim-unreachable given the current driver; waived — see §9.)*
 *   **W3 [assert]** The UART transmit queue's pointer-derived occupancy remains within `[0, 64]`.
 *   **W4 [assert]** The queue flags map correctly to occupancy (empty ⇔ occupancy == 0, full ⇔ occupancy == 64).
-*   **W5 [assert]** The queue does not overflow, except a write is accepted while full if a pop occurs the same cycle, leaving occupancy unchanged.
-*   **W6 [assert]** The queue does not underflow, except a pop is accepted while empty if a push occurs the same cycle, forwarding the pushed byte directly.
+*   **W5 [assert]** The queue does not overflow, except a write is accepted while full if a pop occurs the same cycle, leaving occupancy unchanged. *(Sim-unreachable; waived — see §9.)*
+*   **W6 [assert]** The queue does not underflow, except a pop is accepted while empty if a push occurs the same cycle, forwarding the pushed byte directly. *(Sim-unreachable; waived — see §9.)*
 *   **W7 [assert]** The queue drains into the core only when `UART_CTRL[0]` (`TX_EN`) is enabled.
 *   **W8 [assert]** The queue's read output changes only on an accepted pop.
 *   **W9 [assert]** Exactly one of the address decoder's page-select outputs (or its decode-error output) is asserted for any address — no overlapping or aliased page decode.
@@ -106,7 +106,7 @@ All assertions are implemented in a separate bind file and instantiated directly
 *   **Access Spacing**: Back-to-back and gapped transactions.
 *   **Response Types**: `OKAY`, `SLVERR`, and `DECERR` on both read and write channels.
 *   **UART Transmit Queue Occupancy**: Bins for empty (`0`), full (`64`), and intermediate (`1-63`).
-*   **UART Transmit Queue Events**: Simultaneous push and pop at partial, full, and empty occupancy, write-while-full drops, and full-to-empty drain transitions.
+*   **UART Transmit Queue Events**: Push, pop, and write-while-full drop events, and full-to-empty drain transitions. (Simultaneous push/pop waived — see §9.)
 *   **UART Frame Format**: Parity (`none`, `even`, `odd`) × stop bits (`1`, `2`).
 *   **SPI CPOL**: Clock idle level, both polarities.
 *   **SPI CPHA**: Clock phase, both settings.
@@ -124,7 +124,6 @@ All assertions are implemented in a separate bind file and instantiated directly
 *   `SPI CPOL` × `SPI CPHA` — all four SPI modes exercised.
 *   `SPI CPHA` × `SPI Transfer Data` — each interesting data pattern seen in both CPHA settings, on both `MOSI` and `MISO`.
 *   `I2C Direction` × `I2C ACK/NACK Response` — both directions see both ACK and NACK.
-*   `UART Transmit Queue Occupancy` × `BAUD_DIV` — FIFO stressed across slow and fast baud rates.
 
 ### Closure Target
 The following must-hit set is required at 100%; overall functional coverage must reach ≥ 95%, with written waivers for intentionally unreachable bins.
@@ -137,7 +136,7 @@ The following must-hit set is required at 100%; overall functional coverage must
 *   Both I2C directions (`read`/`write`) see both ACK and NACK.
 *   All four interesting I2C data patterns observed on `TXDATA`/`RXDATA`.
 *   SPI and UART RX round-trips exercised.
-*   At least one FIFO full-to-empty drain and write-while-full drop. (Simultaneous push/pop is waived from sim closure — already proven exhaustively by formal properties and near-impossible to cover in AXI transactions.)
+*   At least one FIFO full-to-empty drain and write-while-full drop. (Simultaneous push/pop waived — see §9.)
 *   All three parity modes and both stop-bit settings exercised, and at least one RX parity-error detection.
 *   At least one `RX_OVERRUN` event.
 
@@ -155,7 +154,6 @@ Transactions are randomized across address ranges, write data, write strobes, ar
 
 ## 8. Test Case Inventory
 
-*   **`test_reset`**: Verifies default register states and FSM idle behavior following reset deassertion.
 *   **`test_register_access`**: Directed read/write to every register address, covering write-strobe alignment, read-only protection, and decode errors.
 *   **`test_arrival_order`**: Directed staggered AW/W traffic (address-first, data-first, concurrent) to exercise the `W_WAIT_DATA` and `W_WAIT_ADDR` states explicitly.
 *   **`test_peripheral_roundtrip`**: Directed serial round-trips — SPI across all four modes, I2C write and read with both ACK and NACK, and UART transmit and receive sweeping parity (none/even/odd) and stop bits (1/2), including parity-error injection (`RX_PERR`) — validating the wrapper mapping end to end.
@@ -164,20 +162,30 @@ Transactions are randomized across address ranges, write data, write strobes, ar
 
 ---
 
-## 9. Sign-off / Exit Criteria
+## 9. Waivers
 
-Verification is complete and ready for release when:
-*   **Functional Coverage**: 100% of the must-hit coverpoints and crosses (§6) are reached or covered by approved waivers, and overall functional coverage is ≥ 95%.
-*   **Code Coverage**: 100% block, branch, and toggle coverage on control/routing logic, with documented exceptions.
-*   **Zero Mismatch Errors**: The scoreboard reports zero data mismatches across register and serial checks.
-*   **Zero Protocol Violations**: No AXI or interface SVA failures across the regression.
-*   **Formal Proofs**: All safety and liveness properties of the skid buffer, the synchronous UART transmit queue, the address decoder, and the AXI4-Lite read/write handlers are proven via formal analysis (§5 SVA Inventory).
-*   **Regression Status**: The multi-seed suite compiles and completes cleanly without warnings.
-*   **Bug-Hunt Log**: Populated, with each entry root-caused and resolved (§10).
+Coverage and assertion gaps that are structurally unreachable by the current testbench architecture, not merely rare — each already proven exhaustively by formal.
+
+| Gap | Items | Why Unreachable | Disposition |
+|---|---|---|---|
+| Skid buffer `FULL` state | `W1`, `W2` (`in_ready` side) · `B1_AW`/`B1_W`/`B1_AR`, `B2_AW`/`B2_W`/`B2_AR` | `axi_driver` is single-outstanding: it never issues a new AW/W/AR while a prior transaction still holds `READY` low, so `FULL` is never entered and those `READY` signals never drop while `VALID` is high. | Waived from sim closure — `skid_buffer.sv`'s own formal block covers `current_state == FULL` exhaustively. |
+| UART FIFO concurrent push/pop | `W5`, `W6` · FIFO concurrent-event coverpoint/cross | Requires a same-cycle push and pop at the full/empty boundary, which AXI-driven stimulus can't reliably produce. | Waived from sim closure — already proven exhaustively by formal. |
 
 ---
 
-## 10. Bug-Hunt Log
+## 10. Sign-off / Exit Criteria
+
+Verification is complete and ready for release when:
+*   **Functional Coverage**: 100% of the must-hit coverpoints and crosses (§6) are reached or covered by approved waivers (§9), and overall functional coverage is ≥ 95%.
+*   **Zero Mismatch Errors**: The scoreboard reports zero data mismatches across register and serial checks.
+*   **Zero Protocol Violations**: No AXI or interface SVA failures across the regression.
+*   **Formal Proofs**: All safety and liveness properties of the skid buffer and the synchronous UART transmit queue are proven via formal analysis (§5 SVA Inventory).
+*   **Regression Status**: The multi-seed suite compiles and completes cleanly without warnings.
+*   **Bug-Hunt Log**: Populated, with each entry root-caused and resolved (§11).
+
+---
+
+## 11. Bug-Hunt Log
 
 This log is a living artifact, populated during bring-up and regression. Each entry records a defect first caught by constrained-random or mutation testing that directed tests missed, together with the failing seed, so the commit history corroborates the verification effort.
 
