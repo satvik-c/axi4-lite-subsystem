@@ -175,9 +175,9 @@ class scoreboard;
                 rx2scb.get(txn_rx);
 
                 if (uart_rx_valid_expected) uart_rx_overrun_expected = 1;
-                uart_rx_valid_expected = 1;
+                uart_rx_valid_expected = !(txn_rx.parity_en && txn_rx.inject_perr);
                 uart_rxdata_expected = txn_rx.data;
-                uart_rx_perr_expected = txn_rx.inject_perr;
+                uart_rx_perr_expected = txn_rx.parity_en && txn_rx.inject_perr;
 
                 count++;
             end
