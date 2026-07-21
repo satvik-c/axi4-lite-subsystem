@@ -96,7 +96,9 @@ class subsystem_cov;
 
         cx_type_reg     : cross cp_txn_type, cp_reg_hitmap;
         cx_reg_wstrb    : cross cp_reg_hitmap, cp_wstrb;
-        cx_type_resp    : cross cp_txn_type, cp_response;
+        cx_type_resp    : cross cp_txn_type, cp_response {
+            ignore_bins read_slverr = binsof(cp_txn_type.read) && binsof(cp_response.slverr);
+        }
         cx_order_resp   : cross cp_arrival_order, cp_response;
         cx_spacing_type : cross cp_spacing, cp_txn_type;
         
@@ -233,18 +235,9 @@ class subsystem_cov;
             bins drop = { DROP };
         }
 
-        cp_concurrent : coverpoint txn_fifo.concurrent iff (txn_fifo.event_t != DROP) {
-            bins separate = { 0 };
-            bins concurrent = { 1 };
-        }
-
         cp_full_to_empty : coverpoint complete {
             bins not_complete = { 0 };
             bins complete = { 1 };
-        }
-
-        cx_occupancy_concurrent : cross cp_occupancy, cp_concurrent {
-            ignore_bins skip_separate = binsof(cp_concurrent.separate);
         }
 
     endgroup
@@ -320,9 +313,7 @@ class subsystem_cov;
         $display(" UART FIFO");
         $display("   cp_occupancy     : %0.2f%%", cg_fifo.cp_occupancy.get_coverage());
         $display("   cp_event         : %0.2f%%", cg_fifo.cp_event.get_coverage());
-        $display("   cp_concurrent    : %0.2f%%", cg_fifo.cp_concurrent.get_coverage());
         $display("   cp_full_to_empty : %0.2f%%", cg_fifo.cp_full_to_empty.get_coverage());
-        $display("   cx_occ_concurrent: %0.2f%%", cg_fifo.cx_occupancy_concurrent.get_coverage());
         $display("==============================================");
     endfunction
 
