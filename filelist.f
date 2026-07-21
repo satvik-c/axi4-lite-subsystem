@@ -26,6 +26,11 @@ rtl/axi/write_handler.sv
 rtl/axi/top_regs.sv
 rtl/axi4_lite_subsystem.sv
 
+# Peripheral register taps (live DUT config state for agents, bypasses reg_model)
+dv/env/spi_regs_tap.sv
+dv/env/i2c_regs_tap.sv
+dv/env/uart_regs_tap.sv
+
 # SPI slave
 dv/env/spi_if.sv
 dv/env/spi_txn.sv
@@ -72,4 +77,7 @@ dv/sva/decoder_sva.sv
 dv/sva/regs_sva.sv
 
 # DV tests
-dv/tests/test_smoke.sv
+dv/tests/test*.sv
+
+# DV top
+dv/tb_top.sv
