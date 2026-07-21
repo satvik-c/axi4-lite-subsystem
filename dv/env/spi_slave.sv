@@ -29,14 +29,14 @@ class spi_slave;
 
             test2spi.get(txn);
             
-            drive_sclk_val = txn.cpol ^ txn.cpha;
-            sample_sclk_val = ~(txn.cpol ^ txn.cpha);
-            
             @(negedge vif.cs_n);
             txn.cpol = reg_model.spi_cpol;
             txn.cpha = reg_model.spi_cpha;
             txn.mosi_expected = reg_model.spi_txdata;
-            
+
+            drive_sclk_val = txn.cpol ^ txn.cpha;
+            sample_sclk_val = ~(txn.cpol ^ txn.cpha);
+
             fork
                 begin
                     if (txn.cpha == 0) vif.miso = txn.miso[7];
