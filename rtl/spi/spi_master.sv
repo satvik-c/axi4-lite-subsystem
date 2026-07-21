@@ -178,7 +178,7 @@ module spi_master
 
     // Output control signals combinational logic
     always_comb begin
-        cs_n          = 1'b0;
+        cs_n          = 1'b1;
         busy          = 1'b1;
         sclk_en       = 1'b0;
         load_tx_shift = 1'b0;
@@ -187,19 +187,21 @@ module spi_master
 
         case (current_state)
             IDLE: begin
-                cs_n = 1'b1;
                 busy = 1'b0;
                 if (start && en) load_tx_shift = 1'b1;
             end
             SETUP: begin
+                cs_n = 1'b0;
                 // Wait for setup phase completion
             end
             SHIFT: begin
+                cs_n = 1'b0;
                 sclk_en = 1'b1;
                 if (drive_strobe)       drive_bit  = 1'b1;
                 else if (sample_strobe) sample_bit = 1'b1;
             end
             HOLD: begin
+                cs_n = 1'b0;
                 // Wait for hold phase completion
             end
             default: ;

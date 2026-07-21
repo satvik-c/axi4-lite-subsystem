@@ -185,5 +185,6 @@ This log is a living artifact, populated during bring-up and regression. Each en
 |---|---|---|---|
 | **RTL - 01** | `I2C_STATUS.nack` read back as `1` after a successful transaction. | `nack_reg` was gated on the combinational `i2c_nack` level, which is high through `IDLE`/`START` and always shadowed the `i2c_start` clear. Fixed by latching `nack_reg` from the master's `valid` completion pulse instead. | [i2c_regs.sv](../rtl/i2c/i2c_regs.sv#L155) |
 | **RTL - 02** | Deasserting `rx_en` had no effect on UART reception. | The RX FSM and baud/oversample generator ran unconditionally, never consulting `rx_en`. Fixed by gating `next_state` and `enable` on `rx_en`. | [uart_rx.sv](../rtl/uart/uart_rx.sv#L120) |
+| **RTL - 03** | `cs_n` briefly asserts before reset resolves `current_state`, ahead of any real transfer. | `cs_n` defaulted low at the top of the combinational block, relying on the `IDLE` case arm to deassert it; undefined `current_state` pre-reset matched no arm, leaving it unsafely asserted. Fixed by defaulting `cs_n` high and asserting it explicitly in `SETUP`/`SHIFT`/`HOLD` instead. | [spi_master.sv](../rtl/spi/spi_master.sv#L180) |
 
 ---
