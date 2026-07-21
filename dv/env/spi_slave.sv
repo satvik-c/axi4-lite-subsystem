@@ -1,7 +1,6 @@
 class spi_slave;
 
     virtual spi_if.slave vif;
-    axi_reg_model reg_model;
 
     mailbox #(spi_txn) test2spi;
     mailbox #(spi_txn) spi2scb;
@@ -9,13 +8,11 @@ class spi_slave;
 
     function new (
         virtual spi_if.slave vif,
-        axi_reg_model reg_model,
         mailbox #(spi_txn) test2spi,
         mailbox #(spi_txn) spi2scb,
         mailbox #(spi_txn) spi2cov
     );
         this.vif = vif;
-        this.reg_model = reg_model;
         this.test2spi = test2spi;
         this.spi2scb = spi2scb;
         this.spi2cov = spi2cov;
@@ -27,19 +24,22 @@ class spi_slave;
             logic drive_sclk_val;
             logic sample_sclk_val;
 
+            wait (vif.rst_n === 1);
             test2spi.get(txn);
-            
+
             @(negedge vif.cs_n);
-            txn.cpol = reg_model.spi_cpol;
-            txn.cpha = reg_model.spi_cpha;
-            txn.mosi_expected = reg_model.spi_txdata;
+            txn.cpol = spi_dut_state::cpol;
+            txn.cpha = spi_dut_state::cpha;
+            txn.mosi_expected = spi_dut_state::txdata;
 
             drive_sclk_val = txn.cpol ^ txn.cpha;
             sample_sclk_val = ~(txn.cpol ^ txn.cpha);
 
             fork
                 begin
-                    if (txn.cpha == 0) vif.miso = txn.miso[7];
+                    if (txn.cpha == 0) begin
+                        vif.miso = txn.miso[7];
+                    end
                     else begin
                         @(vif.sclk iff vif.sclk == drive_sclk_val);
                         vif.miso = txn.miso[7];

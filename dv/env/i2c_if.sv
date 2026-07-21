@@ -1,4 +1,4 @@
-interface i2c_if;
+interface i2c_if(input logic rst_n);
 
     logic scl;
     wire sda;
@@ -13,6 +13,7 @@ interface i2c_if;
     );
 
     modport slave (
+        input rst_n,
         input scl,
         inout sda,
         output sda_oe

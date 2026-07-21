@@ -1,7 +1,6 @@
 class i2c_slave;
 
     virtual i2c_if.slave vif;
-    axi_reg_model reg_model;
 
     mailbox #(i2c_txn) test2i2c;
     mailbox #(i2c_txn) i2c2scb;
@@ -9,13 +8,11 @@ class i2c_slave;
 
     function new (
         virtual i2c_if.slave vif,
-        axi_reg_model reg_model,
         mailbox #(i2c_txn) test2i2c,
         mailbox #(i2c_txn) i2c2scb,
         mailbox #(i2c_txn) i2c2cov
         );
         this.vif = vif;
-        this.reg_model = reg_model;
         this.test2i2c = test2i2c;
         this.i2c2scb = i2c2scb;
         this.i2c2cov = i2c2cov;
@@ -25,15 +22,16 @@ class i2c_slave;
         forever begin
             i2c_txn txn;
 
+            wait (vif.rst_n === 1);
             test2i2c.get(txn);
 
             @(negedge vif.sda iff vif.scl == 1);
-            txn.addr_expected = reg_model.i2c_addr;
-            txn.rw_n_expected = reg_model.i2c_rw_n;
-            txn.txdata_expected = reg_model.i2c_txdata;
+            txn.addr_expected = i2c_dut_state::addr;
+            txn.rw_n_expected = i2c_dut_state::rw_n;
+            txn.txdata_expected = i2c_dut_state::txdata;
 
             vif.sda_oe = 0;
-            
+
             for (int i = 6; i >= 0; i--) begin // addr (7 bits)
                 @(posedge vif.scl);
                 txn.addr_sampled[i] = vif.sda;

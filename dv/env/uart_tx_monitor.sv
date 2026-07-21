@@ -1,15 +1,13 @@
 class uart_tx_monitor;
 
     virtual uart_if.tx_monitor vif;
-    axi_reg_model reg_model;
     time clk_period;
 
     mailbox #(uart_tx_txn) tx2scb;
     mailbox #(uart_tx_txn) tx2cov;
 
-    function new(virtual uart_if.tx_monitor vif, axi_reg_model reg_model, time clk_period, mailbox #(uart_tx_txn) tx2scb, mailbox #(uart_tx_txn) tx2cov);
+    function new(virtual uart_if.tx_monitor vif, time clk_period, mailbox #(uart_tx_txn) tx2scb, mailbox #(uart_tx_txn) tx2cov);
         this.vif = vif;
-        this.reg_model = reg_model;
         this.clk_period = clk_period;
         this.tx2scb = tx2scb;
         this.tx2cov = tx2cov;
@@ -21,10 +19,10 @@ class uart_tx_monitor;
             logic [15:0] baud_div;
 
             @(negedge vif.tx_out);
-            txn.parity_en = reg_model.uart_parity_en;
-            txn.parity_mode = reg_model.uart_parity_mode;
-            txn.stop_bits = reg_model.uart_stop_bits;
-            baud_div = reg_model.uart_baud_div;
+            txn.parity_en = uart_dut_state::parity_en;
+            txn.parity_mode = uart_dut_state::parity_mode;
+            txn.stop_bits = uart_dut_state::stop_bits;
+            baud_div = uart_dut_state::baud_div;
 
             #(baud_div * clk_period);
             #(baud_div * clk_period / 2);

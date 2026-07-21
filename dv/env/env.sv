@@ -65,10 +65,10 @@ class env;
         drv_axi = new(vif_axi, test2drv);
         mon_axi = new(vif_axi, mon2scb, mon2scb_rst, mon2cov);
         scb = new(mon2scb, mon2scb_rst, spi2scb, i2c2scb, rx2scb, tx2scb);
-        slv_spi = new(vif_spi, scb.reg_model, test2spi, spi2scb, spi2cov);
-        slv_i2c = new(vif_i2c, scb.reg_model, test2i2c, i2c2scb, i2c2cov);
-        drv_rx = new(vif_uart, scb.reg_model, clk_period, test2rx, rx2scb, rx2cov);
-        mon_tx = new(vif_uart, scb.reg_model, clk_period, tx2scb, tx2cov);
+        slv_spi = new(vif_spi, test2spi, spi2scb, spi2cov);
+        slv_i2c = new(vif_i2c, test2i2c, i2c2scb, i2c2cov);
+        drv_rx = new(vif_uart, clk_period, test2rx, rx2scb, rx2cov);
+        mon_tx = new(vif_uart, clk_period, tx2scb, tx2cov);
         cov = new(mon2cov, spi2cov, i2c2cov, rx2cov, tx2cov);
     endfunction
 
