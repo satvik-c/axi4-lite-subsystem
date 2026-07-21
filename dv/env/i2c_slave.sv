@@ -68,12 +68,15 @@ class i2c_slave;
                 end else begin
                     vif.sda_oe = 0;
                 end
+
+                @(negedge vif.scl); // end of data ack/nack
+                vif.sda_oe = 0;
             end
 
             @(posedge vif.sda iff vif.scl == 1);
             vif.sda_oe = 0;
             i2c2scb.put(txn);
-            i2c2cov.put(txn);            
+            i2c2cov.put(txn);
         end
     endtask
 

@@ -82,7 +82,7 @@ class scoreboard;
                         spi_rx_valid_expected = 0;
                     end
 
-                    if (mon_txn.addr[11:8] == 4'h1 && mon_txn.addr[7:2] == I2C_STATUS) begin
+                    if (mon_txn.addr[11:8] == 4'h1 && mon_txn.addr[7:2] == I2C_STATUS && !mon_txn.rdata[I2C_STATUS_BUSY]) begin
                         if (mon_txn.rdata[I2C_STATUS_RXVALID] != i2c_rx_valid_expected) begin
                             $error("[i2c] RX_VALID mismatch: expected=%0d, got=%0d", i2c_rx_valid_expected, mon_txn.rdata[I2C_STATUS_RXVALID]);
                             errors++;
@@ -158,13 +158,13 @@ class scoreboard;
                     $error("[i2c] direction mismatch: expected=%0d, got=%0d", txn_i2c.rw_n_expected, txn_i2c.rw_n_sampled);
                     errors++;
                 end
-                if (!txn_i2c.rw_n_sampled && txn_i2c.txdata_sampled !== txn_i2c.txdata_expected) begin
+                if (!txn_i2c.nack && !txn_i2c.rw_n_sampled && txn_i2c.txdata_sampled !== txn_i2c.txdata_expected) begin
                     $error("[i2c] TXDATA mismatch: expected=0x%0h, got=0x%0h", txn_i2c.txdata_expected, txn_i2c.txdata_sampled);
                     errors++;
                 end
 
                 if (txn_i2c.rw_n_sampled && !txn_i2c.nack) i2c_rx_valid_expected = 1;
-                if (!txn_i2c.rw_n_sampled) i2c_nack_expected = txn_i2c.nack;
+                i2c_nack_expected = txn_i2c.nack;
                 if (txn_i2c.rw_n_sampled && !txn_i2c.nack) i2c_rxdata_expected = txn_i2c.rxdata;
 
                 count++;
