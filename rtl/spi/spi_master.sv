@@ -1,3 +1,7 @@
+// ========================================================
+// SPI master core implementing the SCLK/MOSI/MISO shift sequence with configurable CPOL/CPHA
+// ========================================================
+
 module spi_master
 #(
     // ========================================================
@@ -39,6 +43,7 @@ module spi_master
     output logic                        sclk,
     output logic                        cs_n
 );
+
 
     // ========================================================
     // FSM STATES TYPEDEF

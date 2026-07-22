@@ -1,3 +1,7 @@
+// ========================================================
+// Decodes the AXI address into a peripheral page select or a decode error
+// ========================================================
+
 module address_decoder
 (
     // ========================================================
@@ -13,6 +17,7 @@ module address_decoder
     output logic                       uart_sel,
     output logic                       page_dcerr
 );
+
 
     // ========================================================
     // ADDRESS DECODE LOGIC

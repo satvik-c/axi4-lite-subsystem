@@ -1,4 +1,9 @@
+// ========================================================
+// UART TX/RX pin bundle shared between the DUT and the testbench
+// ========================================================
+
 interface uart_if;
+
 
     // ========================================================
     // INTERFACE SIGNALS
@@ -6,6 +11,7 @@ interface uart_if;
 
     logic tx_out;
     logic rx_in;
+
 
     // ========================================================
     // MODPORTS

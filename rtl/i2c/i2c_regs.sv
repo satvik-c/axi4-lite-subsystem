@@ -1,3 +1,7 @@
+// ========================================================
+// I2C register file exposing control/status/address/data/config registers to the AXI bus
+// ========================================================
+
 module i2c_regs
     import regs_pkg::*;
 (
@@ -36,6 +40,7 @@ module i2c_regs
     input  logic [7:0]              i2c_rxdata,
     output logic [15:0]             i2c_clkdiv
 );
+
 
     // ========================================================
     // INTERNAL SIGNALS & REGISTERS

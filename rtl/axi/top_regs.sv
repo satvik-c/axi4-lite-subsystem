@@ -1,3 +1,7 @@
+// ========================================================
+// Instantiates the address decoders and peripheral register files, muxing their responses
+// ========================================================
+
 module top_regs
 (
     // ========================================================

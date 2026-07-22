@@ -1,3 +1,7 @@
+// ========================================================
+// Bound assertions checking that each peripheral's RXDATA read clears its RX status flags
+// ========================================================
+
 module spi_regs_sva
     import regs_pkg::*;
 (

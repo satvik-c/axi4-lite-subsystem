@@ -1,3 +1,7 @@
+// ========================================================
+// Bound assertions checking AXI4-Lite channel protocol compliance
+// ========================================================
+
 module protocol_sva
 (
     axi4_lite_if vif

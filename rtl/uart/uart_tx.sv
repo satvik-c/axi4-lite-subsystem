@@ -1,3 +1,7 @@
+// ========================================================
+// UART transmitter FSM that serializes a byte with configurable parity and stop bits
+// ========================================================
+
 module uart_tx
 #(
     // ========================================================
@@ -30,6 +34,7 @@ module uart_tx
     output logic                    tx_busy,
     output logic                    tx_out
 );
+
 
     // ========================================================
     // FSM STATES TYPEDEF

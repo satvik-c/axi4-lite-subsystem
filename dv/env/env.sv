@@ -1,4 +1,9 @@
+// ========================================================
+// Top-level testbench environment that builds and connects every agent and checker
+// ========================================================
+
 class env;
+
 
     // ========================================================
     // HANDLES
@@ -9,6 +14,7 @@ class env;
     virtual i2c_if       vif_i2c;
     virtual uart_if      vif_uart;
     time clk_period;
+
 
     // ========================================================
     // MAILBOXES
@@ -34,6 +40,7 @@ class env;
     mailbox #(uart_tx_txn) tx2scb;
     mailbox #(uart_tx_txn) tx2cov;
 
+
     // ========================================================
     // COMPONENTS
     // ========================================================
@@ -47,11 +54,16 @@ class env;
     scoreboard      scb;
     subsystem_cov   cov;
 
+
     // ========================================================
     // CONSTRUCTION
     // ========================================================
 
-    function new(virtual axi4_lite_if vif_axi, virtual spi_if vif_spi, virtual i2c_if vif_i2c, virtual uart_if vif_uart, time clk_period);
+    function new(virtual axi4_lite_if vif_axi,
+                 virtual spi_if vif_spi,
+                 virtual i2c_if vif_i2c,
+                 virtual uart_if vif_uart,
+                 time clk_period);
         this.vif_axi    = vif_axi;
         this.vif_spi    = vif_spi;
         this.vif_i2c    = vif_i2c;
@@ -87,6 +99,7 @@ class env;
         mon_tx  = new(vif_uart, clk_period, tx2scb, tx2cov);
         cov     = new(mon2cov, spi2cov, i2c2cov, rx2cov, tx2cov);
     endfunction
+
 
     // ========================================================
     // RUN

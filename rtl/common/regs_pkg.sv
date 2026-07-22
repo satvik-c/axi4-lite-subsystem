@@ -1,3 +1,7 @@
+// ========================================================
+// Register offset enums and bit-index localparams for SPI, I2C, and UART
+// ========================================================
+
 package regs_pkg;
 
     typedef enum logic [5:0] {

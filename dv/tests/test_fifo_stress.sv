@@ -1,7 +1,10 @@
-import regs_pkg::*;
+// ========================================================
+// Directed test that fills the UART TX FIFO to full and drains it empty
+// ========================================================
 
-// Directed: fill the TX FIFO to full (dropping overflow), then drain it empty
 class test_fifo_stress;
+
+    import regs_pkg::*;
 
     env          e;
     axi_txn      txn;

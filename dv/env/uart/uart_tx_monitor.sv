@@ -1,4 +1,9 @@
+// ========================================================
+// Samples bytes transmitted on the UART TX line at the DUT's configured baud rate
+// ========================================================
+
 class uart_tx_monitor;
+
 
     // ========================================================
     // HANDLES
@@ -10,16 +15,21 @@ class uart_tx_monitor;
     mailbox #(uart_tx_txn) tx2scb;
     mailbox #(uart_tx_txn) tx2cov;
 
+
     // ========================================================
     // CONSTRUCTION
     // ========================================================
 
-    function new(virtual uart_if.tx_monitor vif, time clk_period, mailbox #(uart_tx_txn) tx2scb, mailbox #(uart_tx_txn) tx2cov);
+    function new(virtual uart_if.tx_monitor vif,
+                 time clk_period,
+                 mailbox #(uart_tx_txn) tx2scb,
+                 mailbox #(uart_tx_txn) tx2cov);
         this.vif        = vif;
         this.clk_period = clk_period;
         this.tx2scb     = tx2scb;
         this.tx2cov     = tx2cov;
     endfunction
+
 
     // ========================================================
     // MAIN LOOP

@@ -1,3 +1,7 @@
+// ========================================================
+// Bound assertions checking the address decoder's one-hot select and decode-error behavior
+// ========================================================
+
 module decoder_sva
 (
     input logic [11:0] addr,

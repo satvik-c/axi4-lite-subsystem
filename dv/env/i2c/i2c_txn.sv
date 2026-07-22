@@ -1,3 +1,7 @@
+// ========================================================
+// Randomizable I2C transaction: ACK/NACK response and read data
+// ========================================================
+
 class i2c_txn;
 
     // Randomized slave response: ACK/NACK and read data

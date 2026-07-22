@@ -1,3 +1,7 @@
+// ========================================================
+// AXI4-Lite bus signals, clocking blocks, and modports shared by the DUT and testbench
+// ========================================================
+
 interface axi4_lite_if
 (
     // ========================================================
@@ -8,6 +12,7 @@ interface axi4_lite_if
     input  logic                    ACLK,
     input  logic                    ARESETn
 );
+
 
     // ========================================================
     // INTERFACE SIGNALS

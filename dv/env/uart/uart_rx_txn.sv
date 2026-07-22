@@ -1,3 +1,7 @@
+// ========================================================
+// Randomizable UART receive transaction: data byte and parity-error injection
+// ========================================================
+
 class uart_rx_txn;
 
     // Randomized payload and parity-error injection

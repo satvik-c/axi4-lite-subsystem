@@ -1,3 +1,7 @@
+// ========================================================
+// Records one modeled UART TX FIFO event (push/pop/drop) for coverage
+// ========================================================
+
 typedef enum {
     PUSH,
     POP,

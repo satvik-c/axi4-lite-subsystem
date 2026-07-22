@@ -1,7 +1,11 @@
-import regs_pkg::*;
+// ========================================================
+// Constrained-random regression mixing register accesses and peripheral operations
+// ========================================================
 
-// Constrained-random regression: weighted mix of per-peripheral operations
 class test_random_regression;
+
+    import regs_pkg::*;
+
 
     // ========================================================
     // FIELDS
@@ -31,6 +35,7 @@ class test_random_regression;
     localparam I2C_CLK_DIV = 20;
     localparam BAUD_DIV = 32;
 
+
     // ========================================================
     // CONSTRUCTION
     // ========================================================
@@ -38,6 +43,7 @@ class test_random_regression;
     function new(env e);
         this.e = e;
     endfunction
+
 
     // ========================================================
     // STIMULUS TASKS
@@ -200,6 +206,7 @@ class test_random_regression;
         e.test2drv.put(txn);
         wait (txn.done.triggered);
     endtask
+
 
     // ========================================================
     // RUN

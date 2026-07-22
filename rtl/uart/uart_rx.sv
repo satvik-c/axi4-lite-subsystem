@@ -1,3 +1,7 @@
+// ========================================================
+// UART receiver FSM that samples, deserializes, and checks parity/framing on incoming bits
+// ========================================================
+
 module uart_rx
 #(
     // ========================================================
@@ -34,6 +38,7 @@ module uart_rx
     output logic                    rx_error,
     output logic                    rx_perr
 );
+
 
     // ========================================================
     // FSM STATES TYPEDEF

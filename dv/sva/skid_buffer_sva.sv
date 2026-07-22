@@ -1,3 +1,7 @@
+// ========================================================
+// Bound assertions checking the skid buffer's full-state backpressure
+// ========================================================
+
 module skid_buffer_sva
 (
     input logic       clk,

@@ -1,4 +1,9 @@
+// ========================================================
+// Passively observes the AXI bus and reconstructs completed transactions
+// ========================================================
+
 class axi_monitor;
+
 
     // ========================================================
     // HANDLES
@@ -13,16 +18,21 @@ class axi_monitor;
     longint cycle_count;
     longint last_accepted_cycle;
 
+
     // ========================================================
     // CONSTRUCTION
     // ========================================================
 
-    function new(virtual axi4_lite_if.tb_monitor vif, mailbox #(axi_txn) mon2scb, mailbox mon2scb_rst, mailbox #(axi_txn) mon2cov);
+    function new(virtual axi4_lite_if.tb_monitor vif,
+                 mailbox #(axi_txn) mon2scb,
+                 mailbox mon2scb_rst,
+                 mailbox #(axi_txn) mon2cov);
         this.vif         = vif;
         this.mon2scb     = mon2scb;
         this.mon2scb_rst = mon2scb_rst;
         this.mon2cov     = mon2cov;
     endfunction
+
 
     // ========================================================
     // WRITE MONITOR
@@ -89,6 +99,7 @@ class axi_monitor;
         mon2cov.put(write_txn);
     endtask
 
+
     // ========================================================
     // READ MONITOR
     // ========================================================
@@ -123,6 +134,7 @@ class axi_monitor;
         mon2scb.put(read_txn);
         mon2cov.put(read_txn);
     endtask
+
 
     // ========================================================
     // MAIN LOOP

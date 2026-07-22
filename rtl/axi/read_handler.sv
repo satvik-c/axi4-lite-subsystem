@@ -1,3 +1,7 @@
+// ========================================================
+// AXI4-Lite read-channel FSM that buffers the read address and commits a register read
+// ========================================================
+
 module read_handler
 #(
     // ========================================================
@@ -33,6 +37,7 @@ module read_handler
     input  logic [31:0]  rdata,
     input  logic         rd_dcerr
 );
+
 
     // ========================================================
     // FSM STATES TYPEDEF

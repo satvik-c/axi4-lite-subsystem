@@ -1,4 +1,7 @@
-// Snapshot of live SPI config registers, published for the slave BFM to read
+// ========================================================
+// Mirrors live SPI config registers into a static class for the slave BFM to read
+// ========================================================
+
 class spi_dut_state;
     static logic       cpol;
     static logic       cpha;

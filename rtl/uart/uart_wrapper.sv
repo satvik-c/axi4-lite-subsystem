@@ -1,3 +1,7 @@
+// ========================================================
+// Glues the TX FIFO, transmitter, and receiver into one UART peripheral core
+// ========================================================
+
 module uart_wrapper
 (
     // ========================================================
@@ -29,6 +33,7 @@ module uart_wrapper
     output logic                    tx_out,
     input  logic                    rx_in
 );
+
 
     // ========================================================
     // INTERNAL SIGNALS & REGISTERS

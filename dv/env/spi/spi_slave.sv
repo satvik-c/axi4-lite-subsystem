@@ -1,4 +1,9 @@
+// ========================================================
+// Emulates an external SPI slave, shifting MISO out and sampling MOSI
+// ========================================================
+
 class spi_slave;
+
 
     // ========================================================
     // HANDLES
@@ -9,6 +14,7 @@ class spi_slave;
     mailbox #(spi_txn) test2spi;
     mailbox #(spi_txn) spi2scb;
     mailbox #(spi_txn) spi2cov;
+
 
     // ========================================================
     // CONSTRUCTION
@@ -25,6 +31,7 @@ class spi_slave;
         this.spi2scb  = spi2scb;
         this.spi2cov  = spi2cov;
     endfunction
+
 
     // ========================================================
     // MAIN LOOP

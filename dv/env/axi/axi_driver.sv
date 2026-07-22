@@ -1,4 +1,9 @@
+// ========================================================
+// Drives randomized AXI transactions onto the DUT's slave port
+// ========================================================
+
 class axi_driver;
+
 
     // ========================================================
     // HANDLES
@@ -6,6 +11,7 @@ class axi_driver;
 
     virtual axi4_lite_if.tb_driver vif;
     mailbox #(axi_txn) test2drv;
+
 
     // ========================================================
     // CONSTRUCTION
@@ -15,6 +21,7 @@ class axi_driver;
         this.vif      = vif;
         this.test2drv = test2drv;
     endfunction
+
 
     // ========================================================
     // RESET
@@ -34,6 +41,7 @@ class axi_driver;
         vif.drv.ARVALID <= 0;
         vif.drv.RREADY  <= 0;
     endfunction
+
 
     // ========================================================
     // WRITE SEQUENCE
@@ -79,6 +87,7 @@ class axi_driver;
         ->txn.done;
     endtask
 
+
     // ========================================================
     // READ SEQUENCE
     // ========================================================
@@ -108,6 +117,7 @@ class axi_driver;
         txn.resp  = vif.drv.RRESP;
         ->txn.done;
     endtask
+
 
     // ========================================================
     // MAIN LOOP

@@ -1,3 +1,7 @@
+// ========================================================
+// SPI register file exposing control/status/data/config registers to the AXI bus
+// ========================================================
+
 module spi_regs
     import regs_pkg::*;
 (
@@ -34,6 +38,7 @@ module spi_regs
     output logic                    spi_cpha,
     output logic [15:0]             spi_clkdiv
 );
+
 
     // ========================================================
     // INTERNAL SIGNALS & REGISTERS

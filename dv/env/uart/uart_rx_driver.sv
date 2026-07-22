@@ -1,4 +1,9 @@
+// ========================================================
+// Drives randomized bytes onto the UART RX line at the DUT's configured baud rate
+// ========================================================
+
 class uart_rx_driver;
+
 
     // ========================================================
     // HANDLES
@@ -11,17 +16,23 @@ class uart_rx_driver;
     mailbox #(uart_rx_txn) rx2scb;
     mailbox #(uart_rx_txn) rx2cov;
 
+
     // ========================================================
     // CONSTRUCTION
     // ========================================================
 
-    function new(virtual uart_if.rx_driver vif, time clk_period, mailbox #(uart_rx_txn) test2rx, mailbox #(uart_rx_txn) rx2scb, mailbox #(uart_rx_txn) rx2cov);
+    function new(virtual uart_if.rx_driver vif,
+                 time clk_period,
+                 mailbox #(uart_rx_txn) test2rx,
+                 mailbox #(uart_rx_txn) rx2scb,
+                 mailbox #(uart_rx_txn) rx2cov);
         this.vif        = vif;
         this.clk_period = clk_period;
         this.test2rx    = test2rx;
         this.rx2scb     = rx2scb;
         this.rx2cov     = rx2cov;
     endfunction
+
 
     // ========================================================
     // MAIN LOOP

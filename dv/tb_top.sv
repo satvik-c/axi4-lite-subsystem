@@ -1,6 +1,11 @@
+// ========================================================
+// Testbench top: clock/reset generation, DUT instantiation, assertion binds, and test dispatch
+// ========================================================
+
 `timescale 1ns/1ps
 
 module tb_top;
+
 
     // ========================================================
     // CLOCK & RESET
@@ -23,6 +28,7 @@ module tb_top;
         #100;
         rst_n = 1;
     end
+
 
     // ========================================================
     // DUT & INTERFACES
@@ -56,6 +62,7 @@ module tb_top;
         .rx_in(uart_vif.rx_in)
     );
 
+
     // ========================================================
     // BIND ASSERTIONS & TAPS
     // ========================================================
@@ -72,6 +79,7 @@ module tb_top;
     bind spi_regs        spi_regs_tap     u_spi_regs_tap     (.*);
     bind i2c_regs        i2c_regs_tap     u_i2c_regs_tap     (.*);
     bind uart_regs       uart_regs_tap    u_uart_regs_tap    (.*);
+
 
     // ========================================================
     // TEST DISPATCH
@@ -102,6 +110,7 @@ module tb_top;
             default: $fatal(1, "Unknown TEST_CLASS: %s", name);
         endcase
     endtask
+
 
     // ========================================================
     // MAIN

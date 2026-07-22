@@ -1,4 +1,9 @@
+// ========================================================
+// Randomizable AXI4-Lite transaction: address, data, strobes, and handshake delays
+// ========================================================
+
 class axi_txn;
+
 
     // ========================================================
     // RANDOMIZED FIELDS
@@ -19,6 +24,7 @@ class axi_txn;
     rand int          rready_delay;
     rand int          gap_delay;
 
+
     // ========================================================
     // CAPTURED RESPONSE
     // ========================================================
@@ -26,6 +32,7 @@ class axi_txn;
     logic [31:0] rdata;
     logic [1:0]  resp;
     event        done;
+
 
     // ========================================================
     // CONSTRUCTION
@@ -47,6 +54,7 @@ class axi_txn;
         this.rready_delay  = rready_delay;
         this.gap_delay     = gap_delay;
     endfunction
+
 
     // ========================================================
     // CONSTRAINTS

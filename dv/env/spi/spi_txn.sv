@@ -1,3 +1,7 @@
+// ========================================================
+// Randomizable SPI transaction: driven MISO byte, sampled/expected MOSI
+// ========================================================
+
 class spi_txn;
 
     // Driven MISO byte

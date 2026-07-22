@@ -1,3 +1,7 @@
+// ========================================================
+// UART register file exposing control/status/data/config registers to the AXI bus
+// ========================================================
+
 module uart_regs
     import regs_pkg::*;
 (
@@ -38,6 +42,7 @@ module uart_regs
     output logic                    uart_parity_mode,
     output logic                    uart_stop_bits
 );
+
 
     // ========================================================
     // INTERNAL SIGNALS & REGISTERS

@@ -1,3 +1,7 @@
+// ========================================================
+// Bound assertions checking the UART FIFO's occupancy bounds and the wrapper's pop-gating
+// ========================================================
+
 module uart_fifo_sva
 #(
     parameter DEPTH = 64,

@@ -1,3 +1,7 @@
+// ========================================================
+// Taps the DUT's FIFO port activity and replays it into the FIFO reference model
+// ========================================================
+
 module uart_fifo_tap
 (
     input logic       clk,

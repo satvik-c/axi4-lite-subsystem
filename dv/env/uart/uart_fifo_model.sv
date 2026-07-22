@@ -1,4 +1,9 @@
+// ========================================================
+// Reference model of the UART TX FIFO's contents, mirrored from tapped DUT activity
+// ========================================================
+
 class uart_fifo_model;
+
 
     // ========================================================
     // STATE
@@ -9,6 +14,7 @@ class uart_fifo_model;
     static logic [7:0] unconfirmed [$];
 
     static mailbox #(uart_fifo_txn) fifo2cov = new();
+
 
     // ========================================================
     // MODEL EVENTS
@@ -49,6 +55,7 @@ class uart_fifo_model;
         txn.occupancy = fifo.size();
         fifo2cov.put(txn);
     endtask
+
 
     // ========================================================
     // QUERIES

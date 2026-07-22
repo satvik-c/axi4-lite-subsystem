@@ -1,4 +1,9 @@
+// ========================================================
+// SPI pin bundle shared between the DUT and the slave BFM
+// ========================================================
+
 interface spi_if(input logic rst_n);
+
 
     // ========================================================
     // INTERFACE SIGNALS
@@ -8,6 +13,7 @@ interface spi_if(input logic rst_n);
     logic sclk;
     logic mosi;
     logic miso;
+
 
     // ========================================================
     // MODPORTS

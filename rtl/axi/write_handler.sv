@@ -1,3 +1,7 @@
+// ========================================================
+// AXI4-Lite write-channel FSM that buffers address/data and commits a register write
+// ========================================================
+
 module write_handler
 #(
     // ========================================================
@@ -41,6 +45,7 @@ module write_handler
     input  logic         slverr,
     input  logic         wr_dcerr
 );
+
 
     // ========================================================
     // FSM STATES TYPEDEF

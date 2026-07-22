@@ -1,3 +1,7 @@
+// ========================================================
+// I2C master core implementing the START/address/data/ACK/STOP sequence
+// ========================================================
+
 module i2c_master
 (
     // ========================================================
@@ -27,6 +31,7 @@ module i2c_master
     output logic                        scl,
     inout  wire                         sda
 );
+
 
     // ========================================================
     // FSM STATES TYPEDEF

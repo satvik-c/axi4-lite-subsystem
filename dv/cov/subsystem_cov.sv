@@ -1,4 +1,6 @@
-import regs_pkg::*;
+// ========================================================
+// Functional coverage model sampling AXI, SPI, I2C, UART, and FIFO transactions
+// ========================================================
 
 // Classifications derived from AXI timing for functional coverage
 typedef enum {
@@ -14,6 +16,9 @@ typedef enum {
 
 class subsystem_cov;
 
+    import regs_pkg::*;
+
+
     // ========================================================
     // HANDLES
     // ========================================================
@@ -25,6 +30,7 @@ class subsystem_cov;
     mailbox #(uart_tx_txn) tx2cov;
 
     logic fifo_seen_full;
+
 
     // ========================================================
     // COVERGROUPS
@@ -257,11 +263,16 @@ class subsystem_cov;
 
     endgroup
 
+
     // ========================================================
     // CONSTRUCTION
     // ========================================================
 
-    function new(mailbox #(axi_txn) mon2cov, mailbox #(spi_txn) spi2cov, mailbox #(i2c_txn) i2c2cov, mailbox #(uart_rx_txn) rx2cov, mailbox #(uart_tx_txn) tx2cov);
+    function new(mailbox #(axi_txn) mon2cov,
+                 mailbox #(spi_txn) spi2cov,
+                 mailbox #(i2c_txn) i2c2cov,
+                 mailbox #(uart_rx_txn) rx2cov,
+                 mailbox #(uart_tx_txn) tx2cov);
         this.mon2cov = mon2cov;
         this.spi2cov = spi2cov;
         this.i2c2cov = i2c2cov;
@@ -275,6 +286,7 @@ class subsystem_cov;
         cg_tx = new();
         cg_fifo = new();
     endfunction
+
 
     // ========================================================
     // REPORT
@@ -339,6 +351,7 @@ class subsystem_cov;
         $display("==============================================");
     endfunction
 
+
     // ========================================================
     // CLASSIFIERS
     // ========================================================
@@ -360,6 +373,7 @@ class subsystem_cov;
             fifo_seen_full = 0;
         end
     endfunction
+
 
     // ========================================================
     // MAIN LOOP

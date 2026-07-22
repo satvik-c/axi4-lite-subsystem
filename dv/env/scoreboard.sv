@@ -1,6 +1,11 @@
-import regs_pkg::*;
+// ========================================================
+// Checks bus responses and peripheral status against the reference models
+// ========================================================
 
 class scoreboard;
+
+    import regs_pkg::*;
+
 
     // ========================================================
     // HANDLES
@@ -12,6 +17,7 @@ class scoreboard;
     mailbox #(i2c_txn) i2c2scb;
     mailbox #(uart_rx_txn) rx2scb;
     mailbox #(uart_tx_txn) tx2scb;
+
 
     // ========================================================
     // STATE
@@ -33,11 +39,17 @@ class scoreboard;
     logic       uart_rx_perr_expected;
     logic       uart_rx_overrun_expected;
 
+
     // ========================================================
     // CONSTRUCTION
     // ========================================================
 
-    function new(mailbox #(axi_txn) mon2scb, mailbox mon2scb_rst, mailbox #(spi_txn) spi2scb, mailbox #(i2c_txn) i2c2scb, mailbox #(uart_rx_txn) rx2scb, mailbox #(uart_tx_txn) tx2scb);
+    function new(mailbox #(axi_txn) mon2scb,
+                 mailbox mon2scb_rst,
+                 mailbox #(spi_txn) spi2scb,
+                 mailbox #(i2c_txn) i2c2scb,
+                 mailbox #(uart_rx_txn) rx2scb,
+                 mailbox #(uart_tx_txn) tx2scb);
         this.mon2scb     = mon2scb;
         this.mon2scb_rst = mon2scb_rst;
         this.spi2scb     = spi2scb;
@@ -49,6 +61,7 @@ class scoreboard;
         count     = 0;
         errors    = 0;
     endfunction
+
 
     // ========================================================
     // MAIN LOOP
@@ -87,14 +100,16 @@ class scoreboard;
 
                     if (mon_txn.addr[11:8] == 4'h0 && mon_txn.addr[7:2] == SPI_STATUS) begin
                         if (mon_txn.rdata[SPI_STATUS_RXVALID] != spi_rx_valid_expected) begin
-                            $error("[spi] RX_VALID mismatch: expected=%0d, got=%0d", spi_rx_valid_expected, mon_txn.rdata[SPI_STATUS_RXVALID]);
+                            $error("[spi] RX_VALID mismatch: expected=%0d, got=%0d",
+                                spi_rx_valid_expected, mon_txn.rdata[SPI_STATUS_RXVALID]);
                             errors++;
                         end
                     end
 
                     if (mon_txn.addr[11:8] == 4'h0 && mon_txn.addr[7:2] == SPI_RXDATA) begin
                         if (mon_txn.rdata[7:0] != spi_rxdata_expected) begin
-                            $error("[spi] RXDATA mismatch: expected=0x%0h, got=0x%0h", spi_rxdata_expected, mon_txn.rdata[7:0]);
+                            $error("[spi] RXDATA mismatch: expected=0x%0h, got=0x%0h",
+                                spi_rxdata_expected, mon_txn.rdata[7:0]);
                             errors++;
                         end
                         spi_rx_valid_expected = 0;
@@ -102,18 +117,21 @@ class scoreboard;
 
                     if (mon_txn.addr[11:8] == 4'h1 && mon_txn.addr[7:2] == I2C_STATUS && !mon_txn.rdata[I2C_STATUS_BUSY]) begin
                         if (mon_txn.rdata[I2C_STATUS_RXVALID] != i2c_rx_valid_expected) begin
-                            $error("[i2c] RX_VALID mismatch: expected=%0d, got=%0d", i2c_rx_valid_expected, mon_txn.rdata[I2C_STATUS_RXVALID]);
+                            $error("[i2c] RX_VALID mismatch: expected=%0d, got=%0d",
+                                i2c_rx_valid_expected, mon_txn.rdata[I2C_STATUS_RXVALID]);
                             errors++;
                         end
                         if (mon_txn.rdata[I2C_STATUS_NACK] != i2c_nack_expected) begin
-                            $error("[i2c] NACK mismatch: expected=%0d, got=%0d", i2c_nack_expected, mon_txn.rdata[I2C_STATUS_NACK]);
+                            $error("[i2c] NACK mismatch: expected=%0d, got=%0d",
+                                i2c_nack_expected, mon_txn.rdata[I2C_STATUS_NACK]);
                             errors++;
                         end
                     end
 
                     if (mon_txn.addr[11:8] == 4'h1 && mon_txn.addr[7:2] == I2C_RXDATA) begin
                         if (mon_txn.rdata[7:0] != i2c_rxdata_expected) begin
-                            $error("[i2c] RXDATA mismatch: expected=0x%0h, got=0x%0h", i2c_rxdata_expected, mon_txn.rdata[7:0]);
+                            $error("[i2c] RXDATA mismatch: expected=0x%0h, got=0x%0h",
+                                i2c_rxdata_expected, mon_txn.rdata[7:0]);
                             errors++;
                         end
                         i2c_rx_valid_expected = 0;
@@ -121,22 +139,26 @@ class scoreboard;
 
                     if (mon_txn.addr[11:8] == 4'h2 && mon_txn.addr[7:2] == UART_STATUS) begin
                         if (mon_txn.rdata[UART_STATUS_RXVALID] != uart_rx_valid_expected) begin
-                            $error("[uart rx] RX_VALID mismatch: expected=%0d, got=%0d", uart_rx_valid_expected, mon_txn.rdata[UART_STATUS_RXVALID]);
+                            $error("[uart rx] RX_VALID mismatch: expected=%0d, got=%0d",
+                                uart_rx_valid_expected, mon_txn.rdata[UART_STATUS_RXVALID]);
                             errors++;
                         end
                         if (mon_txn.rdata[UART_STATUS_RXPERR] != uart_rx_perr_expected) begin
-                            $error("[uart rx] RX_PERR mismatch: expected=%0d, got=%0d", uart_rx_perr_expected, mon_txn.rdata[UART_STATUS_RXPERR]);
+                            $error("[uart rx] RX_PERR mismatch: expected=%0d, got=%0d",
+                                uart_rx_perr_expected, mon_txn.rdata[UART_STATUS_RXPERR]);
                             errors++;
                         end
                         if (mon_txn.rdata[UART_STATUS_RXOVERRUN] != uart_rx_overrun_expected) begin
-                            $error("[uart rx] RX_OVERRUN mismatch: expected=%0d, got=%0d", uart_rx_overrun_expected, mon_txn.rdata[UART_STATUS_RXOVERRUN]);
+                            $error("[uart rx] RX_OVERRUN mismatch: expected=%0d, got=%0d",
+                                uart_rx_overrun_expected, mon_txn.rdata[UART_STATUS_RXOVERRUN]);
                             errors++;
                         end
                     end
 
                     if (mon_txn.addr[11:8] == 4'h2 && mon_txn.addr[7:2] == UART_RXDATA) begin
                         if (mon_txn.rdata[7:0] != uart_rxdata_expected) begin
-                            $error("[uart rx] RXDATA mismatch: expected=0x%0h, got=0x%0h", uart_rxdata_expected, mon_txn.rdata[7:0]);
+                            $error("[uart rx] RXDATA mismatch: expected=0x%0h, got=0x%0h",
+                                uart_rxdata_expected, mon_txn.rdata[7:0]);
                             errors++;
                         end
                         uart_rx_valid_expected = 0;
@@ -155,7 +177,8 @@ class scoreboard;
                 spi2scb.get(txn_spi);
 
                 if (txn_spi.mosi_sampled !== txn_spi.mosi_expected) begin
-                    $error("[spi] MOSI mismatch: expected=0x%0h, got=0x%0h", txn_spi.mosi_expected, txn_spi.mosi_sampled);
+                    $error("[spi] MOSI mismatch: expected=0x%0h, got=0x%0h",
+                        txn_spi.mosi_expected, txn_spi.mosi_sampled);
                     errors++;
                 end
 
@@ -171,15 +194,18 @@ class scoreboard;
                 i2c2scb.get(txn_i2c);
 
                 if (txn_i2c.addr_sampled !== txn_i2c.addr_expected) begin
-                    $error("[i2c] address mismatch: expected=0x%0h, got=0x%0h", txn_i2c.addr_expected, txn_i2c.addr_sampled);
+                    $error("[i2c] address mismatch: expected=0x%0h, got=0x%0h",
+                        txn_i2c.addr_expected, txn_i2c.addr_sampled);
                     errors++;
                 end
                 if (txn_i2c.rw_n_sampled !== txn_i2c.rw_n_expected) begin
-                    $error("[i2c] direction mismatch: expected=%0d, got=%0d", txn_i2c.rw_n_expected, txn_i2c.rw_n_sampled);
+                    $error("[i2c] direction mismatch: expected=%0d, got=%0d",
+                        txn_i2c.rw_n_expected, txn_i2c.rw_n_sampled);
                     errors++;
                 end
                 if (!txn_i2c.nack && !txn_i2c.rw_n_sampled && txn_i2c.txdata_sampled !== txn_i2c.txdata_expected) begin
-                    $error("[i2c] TXDATA mismatch: expected=0x%0h, got=0x%0h", txn_i2c.txdata_expected, txn_i2c.txdata_sampled);
+                    $error("[i2c] TXDATA mismatch: expected=0x%0h, got=0x%0h",
+                        txn_i2c.txdata_expected, txn_i2c.txdata_sampled);
                     errors++;
                 end
 
@@ -217,7 +243,9 @@ class scoreboard;
                         errors++;
                     end
                 end else begin
-                    $error("[uart tx] byte observed on wire with no corresponding FIFO pop recorded (desync): data=0x%0h", txn_tx.data_sampled);
+                    $error({"[uart tx] byte observed on wire with no corresponding ",
+                        "FIFO pop recorded (desync): data=0x%0h"},
+                        txn_tx.data_sampled);
                     errors++;
                 end
 
@@ -225,7 +253,8 @@ class scoreboard;
                     logic parity_expected;
                     parity_expected = (!txn_tx.parity_mode) ? ^txn_tx.data_sampled : ~^txn_tx.data_sampled;
                     if (parity_expected != txn_tx.parity_sampled) begin
-                        $error("[uart tx] parity mismatch: expected=%0d, got=%0d", parity_expected, txn_tx.parity_sampled);
+                        $error("[uart tx] parity mismatch: expected=%0d, got=%0d",
+                            parity_expected, txn_tx.parity_sampled);
                         errors++;
                     end
                 end

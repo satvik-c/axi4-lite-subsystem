@@ -1,4 +1,7 @@
-// Snapshot of live I2C config registers, published for the slave BFM to read
+// ========================================================
+// Mirrors live I2C config registers into a static class for the slave BFM to read
+// ========================================================
+
 class i2c_dut_state;
     static logic [6:0] addr;
     static logic       rw_n;

@@ -1,4 +1,9 @@
+// ========================================================
+// Emulates an external I2C slave, acknowledging and shifting data over SDA/SCL
+// ========================================================
+
 class i2c_slave;
+
 
     // ========================================================
     // HANDLES
@@ -9,6 +14,7 @@ class i2c_slave;
     mailbox #(i2c_txn) test2i2c;
     mailbox #(i2c_txn) i2c2scb;
     mailbox #(i2c_txn) i2c2cov;
+
 
     // ========================================================
     // CONSTRUCTION
@@ -25,6 +31,7 @@ class i2c_slave;
         this.i2c2scb  = i2c2scb;
         this.i2c2cov  = i2c2cov;
     endfunction
+
 
     // ========================================================
     // MAIN LOOP

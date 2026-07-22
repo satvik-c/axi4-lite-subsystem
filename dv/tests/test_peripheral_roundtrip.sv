@@ -1,7 +1,11 @@
-import regs_pkg::*;
+// ========================================================
+// Directed test running an end-to-end roundtrip through each peripheral
+// ========================================================
 
-// Directed: end-to-end roundtrip through each peripheral across its config space
 class test_peripheral_roundtrip;
+
+    import regs_pkg::*;
+
 
     // ========================================================
     // FIELDS
@@ -18,6 +22,7 @@ class test_peripheral_roundtrip;
     localparam I2C_CLK_DIV = 20;
     localparam BAUD_DIV = 32;
 
+
     // ========================================================
     // CONSTRUCTION
     // ========================================================
@@ -25,6 +30,7 @@ class test_peripheral_roundtrip;
     function new(env e);
         this.e = e;
     endfunction
+
 
     // ========================================================
     // RUN

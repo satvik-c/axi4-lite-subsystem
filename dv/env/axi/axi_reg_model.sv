@@ -1,4 +1,6 @@
-import regs_pkg::*;
+// ========================================================
+// Reference model that predicts AXI register read/write behavior from the MAS spec
+// ========================================================
 
 typedef enum logic [1:0] {
     RESP_OKAY   = 2'b00,
@@ -18,6 +20,9 @@ typedef enum logic [1:0] {
 // the scoreboard, not predicted here. UART_TXDATA's FIFO push/drop
 // behavior belongs to the separate UART Transmit Queue Model.
 class axi_reg_model;
+
+    import regs_pkg::*;
+
 
     // ========================================================
     // REGISTER FIELDS
@@ -41,6 +46,7 @@ class axi_reg_model;
     logic [15:0] uart_baud_div;
     logic        uart_parity_en, uart_parity_mode, uart_stop_bits;
 
+
     // ========================================================
     // CONSTRUCTION
     // ========================================================
@@ -48,6 +54,7 @@ class axi_reg_model;
     function new();
         reset();
     endfunction
+
 
     // ========================================================
     // RESET
@@ -61,6 +68,7 @@ class axi_reg_model;
         uart_tx_en = 0; uart_rx_en = 0; uart_baud_div = 0;
         uart_parity_en = 0; uart_parity_mode = 0; uart_stop_bits = 0;
     endfunction
+
 
     // ========================================================
     // WRITE PATH
@@ -162,6 +170,7 @@ class axi_reg_model;
                 return RESP_DECERR;
         endcase
     endfunction
+
 
     // ========================================================
     // READ PATH

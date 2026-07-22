@@ -1,3 +1,7 @@
+// ========================================================
+// Top-level subsystem wiring the AXI handlers, register file, and peripheral pins together
+// ========================================================
+
 module axi4_lite_subsystem
 (
     // ========================================================
@@ -21,6 +25,7 @@ module axi4_lite_subsystem
     output logic                    tx_out,
     input  logic                    rx_in
 );
+
 
     // ========================================================
     // INTERNAL SIGNALS & REGISTERS

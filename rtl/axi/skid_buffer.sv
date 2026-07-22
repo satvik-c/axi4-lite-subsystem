@@ -1,3 +1,7 @@
+// ========================================================
+// Single-stage skid buffer that decouples upstream valid/ready from downstream
+// ========================================================
+
 module skid_buffer
 #(
     // ========================================================
@@ -24,6 +28,7 @@ module skid_buffer
     input  logic                    down_ready,
     output logic [WIDTH-1:0]        down_data
 );
+
 
     // ========================================================
     // FSM STATES TYPEDEF

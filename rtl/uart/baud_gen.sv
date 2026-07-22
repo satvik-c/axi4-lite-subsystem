@@ -1,3 +1,7 @@
+// ========================================================
+// Free-running baud-rate tick generator shared by the UART transmitter and receiver
+// ========================================================
+
 module baud_gen
 (
     // ========================================================
@@ -15,6 +19,7 @@ module baud_gen
     // Outputs
     output logic                    baud_tick
 );
+
 
     // ========================================================
     // INTERNAL SIGNALS & REGISTERS

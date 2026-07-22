@@ -1,4 +1,7 @@
-// Directed: exercise AW/W arrival-order variants on a single SPI register
+// ========================================================
+// Directed test exercising AW/W arrival-order variants on a single register
+// ========================================================
+
 class test_arrival_order;
 
     env     e;

@@ -1,3 +1,7 @@
+// ========================================================
+// Circular-buffer FIFO backing the UART transmit queue
+// ========================================================
+
 module uart_fifo
 #(
     // ========================================================
@@ -27,6 +31,7 @@ module uart_fifo
     output logic                    full,
     output logic                    empty
 );
+
 
     // ========================================================
     // INTERNAL SIGNALS & REGISTERS

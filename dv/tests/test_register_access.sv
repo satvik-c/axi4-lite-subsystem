@@ -1,4 +1,7 @@
-// Directed: sweep the register map with every strobe pattern, plus decode boundaries
+// ========================================================
+// Directed test sweeping the register map with every write-strobe pattern and its decode boundaries
+// ========================================================
+
 class test_register_access;
 
     env     e;
