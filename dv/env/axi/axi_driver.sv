@@ -1,13 +1,26 @@
 class axi_driver;
 
+    // ========================================================
+    // HANDLES
+    // ========================================================
+
     virtual axi4_lite_if.tb_driver vif;
     mailbox #(axi_txn) test2drv;
 
+    // ========================================================
+    // CONSTRUCTION
+    // ========================================================
+
     function new(virtual axi4_lite_if.tb_driver vif, mailbox #(axi_txn) test2drv);
-        this.vif = vif;
+        this.vif      = vif;
         this.test2drv = test2drv;
     endfunction
 
+    // ========================================================
+    // RESET
+    // ========================================================
+
+    // Drive all master-side outputs to their idle state
     function void reset();
         vif.drv.AWADDR  <= 0;
         vif.drv.AWPROT  <= 0;
@@ -22,6 +35,11 @@ class axi_driver;
         vif.drv.RREADY  <= 0;
     endfunction
 
+    // ========================================================
+    // WRITE SEQUENCE
+    // ========================================================
+
+    // Drive AW and W channels in parallel, then accept the B response
     task drive_write(axi_txn txn);
         @(vif.drv);
 
@@ -61,6 +79,11 @@ class axi_driver;
         ->txn.done;
     endtask
 
+    // ========================================================
+    // READ SEQUENCE
+    // ========================================================
+
+    // Drive the AR channel, then accept the R response
     task drive_read(axi_txn txn);
         @(vif.drv);
 
@@ -68,7 +91,7 @@ class axi_driver;
         vif.drv.ARADDR  <= txn.addr;
         vif.drv.ARPROT  <= txn.prot;
         vif.drv.ARVALID <= 1;
-        
+
         do begin
             @(vif.drv);
         end while (!vif.drv.ARREADY);
@@ -86,6 +109,11 @@ class axi_driver;
         ->txn.done;
     endtask
 
+    // ========================================================
+    // MAIN LOOP
+    // ========================================================
+
+    // Pull transactions and drive them; restart cleanly on reset
     task run();
         reset();
 
@@ -99,7 +127,7 @@ class axi_driver;
                         test2drv.get(txn);
 
                         if (txn.is_write) drive_write(txn);
-                        else drive_read(txn);
+                        else              drive_read(txn);
 
                         repeat (txn.gap_delay) @(vif.drv);
                     end
@@ -108,7 +136,7 @@ class axi_driver;
 
             forever begin
                 @(negedge vif.ARESETn);
-                
+
                 disable tx_process;
                 reset();
             end

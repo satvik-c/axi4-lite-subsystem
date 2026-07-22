@@ -83,7 +83,7 @@ module uart_fifo
 `ifdef FORMAL
 
     // W3 [assert] The UART transmit queue's pointer-derived occupancy remains within [0, 64].
-    // W4 [assert] The queue flags map correctly to occupancy (empty ⇔ occupancy == 0, full ⇔ occupancy == 64).
+    // W4 [assert] The queue flags map correctly to occupancy (empty <=> occupancy == 0, full <=> occupancy == 64).
     // W5 [assert] The queue does not overflow, except a write is accepted while full if a pop occurs the same cycle, leaving occupancy unchanged.
     // W6 [assert] The queue does not underflow, except a pop is accepted while empty if a push occurs the same cycle, forwarding the pushed byte directly.
     // W8 [assert] The queue's read output changes only on an accepted pop.

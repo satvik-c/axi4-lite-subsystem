@@ -1,4 +1,5 @@
-module skid_buffer_sva (
+module skid_buffer_sva
+(
     input logic       clk,
     input logic       rst_n,
     input logic       up_valid,
@@ -13,9 +14,11 @@ module skid_buffer_sva (
 
     localparam FULL = 2'd2;
 
+    // W1: READY is deasserted while the skid buffer is full
     W1: assert property (current_state == FULL |-> !up_ready);
 
-    W2_up_ready: assert property ($changed(up_ready) |-> $changed(current_state));
+    // W2: handshake signals only change on a state transition
+    W2_up_ready:   assert property ($changed(up_ready) |-> $changed(current_state));
     W2_down_valid: assert property ($changed(down_valid) |-> $changed(current_state));
 
 endmodule

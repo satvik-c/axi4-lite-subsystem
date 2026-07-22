@@ -1,24 +1,38 @@
 import regs_pkg::*;
 
+// Directed: end-to-end roundtrip through each peripheral across its config space
 class test_peripheral_roundtrip;
 
-    env e;
-    axi_txn txn;
-    spi_txn txn_spi;
-    i2c_txn txn_i2c;
-    uart_rx_txn txn_rx;
+    // ========================================================
+    // FIELDS
+    // ========================================================
+
+    env          e;
+    axi_txn      txn;
+    spi_txn      txn_spi;
+    i2c_txn      txn_i2c;
+    uart_rx_txn  txn_rx;
     logic [31:0] wdata;
 
     localparam SPI_CLK_DIV = 10;
     localparam I2C_CLK_DIV = 20;
     localparam BAUD_DIV = 32;
 
+    // ========================================================
+    // CONSTRUCTION
+    // ========================================================
+
     function new(env e);
         this.e = e;
     endfunction
 
+    // ========================================================
+    // RUN
+    // ========================================================
+
     task run();
-        
+
+        // SPI: across both CPOL/CPHA, transfer a byte and read it back
         for (int i = 0; i <= 1; i++) begin
             for (int j = 0; j <= 1; j++) begin
                 txn_spi = new();
@@ -58,6 +72,7 @@ class test_peripheral_roundtrip;
             end
         end
 
+        // I2C: across ACK/NACK and read/write, run a transfer and read it back
         for (int i = 0; i <= 1; i++) begin
             for (int j = 0; j <= 1; j++) begin
                 txn_i2c = new();
@@ -93,10 +108,11 @@ class test_peripheral_roundtrip;
 
                 txn = new(0, 4'h1, I2C_RXDATA);
                 e.test2drv.put(txn);
-                wait(txn.done.triggered);
+                wait (txn.done.triggered);
             end
         end
 
+        // UART: across parity/stop-bit config, receive a byte and echo it out
         for (int i = 0; i <= 1; i++) begin
             for (int j = 0; j <= 1; j++) begin
                 for (int k = 0; k <= 1; k++) begin
@@ -132,7 +148,7 @@ class test_peripheral_roundtrip;
 
                         txn = new(0, 4'h2, UART_RXDATA);
                         e.test2drv.put(txn);
-                        wait(txn.done.triggered);
+                        wait (txn.done.triggered);
 
                         wdata = 32'h0;
                         wdata[7:0] = txn.rdata[7:0];
@@ -144,6 +160,7 @@ class test_peripheral_roundtrip;
             end
         end
 
+        // UART overrun: receive a second byte before the first is read out
         txn_rx = new();
         txn_rx.inject_perr = 0;
         txn_rx.data = 8'h72;
@@ -174,8 +191,7 @@ class test_peripheral_roundtrip;
 
         txn = new(0, 4'h2, UART_RXDATA);
         e.test2drv.put(txn);
-        wait(txn.done.triggered);
-
+        wait (txn.done.triggered);
     endtask
 
 endclass

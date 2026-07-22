@@ -1,10 +1,18 @@
 class env;
 
+    // ========================================================
+    // HANDLES
+    // ========================================================
+
     virtual axi4_lite_if vif_axi;
-    virtual spi_if vif_spi;
-    virtual i2c_if vif_i2c;
-    virtual uart_if vif_uart;
+    virtual spi_if       vif_spi;
+    virtual i2c_if       vif_i2c;
+    virtual uart_if      vif_uart;
     time clk_period;
+
+    // ========================================================
+    // MAILBOXES
+    // ========================================================
 
     mailbox #(axi_txn) test2drv;
     mailbox #(axi_txn) mon2scb;
@@ -26,52 +34,65 @@ class env;
     mailbox #(uart_tx_txn) tx2scb;
     mailbox #(uart_tx_txn) tx2cov;
 
-    axi_driver drv_axi;
-    axi_monitor mon_axi;
-    spi_slave slv_spi;
-    i2c_slave slv_i2c;
-    uart_rx_driver drv_rx;
+    // ========================================================
+    // COMPONENTS
+    // ========================================================
+
+    axi_driver      drv_axi;
+    axi_monitor     mon_axi;
+    spi_slave       slv_spi;
+    i2c_slave       slv_i2c;
+    uart_rx_driver  drv_rx;
     uart_tx_monitor mon_tx;
-    scoreboard scb;
-    subsystem_cov cov;
+    scoreboard      scb;
+    subsystem_cov   cov;
+
+    // ========================================================
+    // CONSTRUCTION
+    // ========================================================
 
     function new(virtual axi4_lite_if vif_axi, virtual spi_if vif_spi, virtual i2c_if vif_i2c, virtual uart_if vif_uart, time clk_period);
-        this.vif_axi = vif_axi;
-        this.vif_spi = vif_spi;
-        this.vif_i2c = vif_i2c;
-        this.vif_uart = vif_uart;
+        this.vif_axi    = vif_axi;
+        this.vif_spi    = vif_spi;
+        this.vif_i2c    = vif_i2c;
+        this.vif_uart   = vif_uart;
         this.clk_period = clk_period;
 
-        test2drv = new();
-        mon2scb = new();
+        test2drv    = new();
+        mon2scb     = new();
         mon2scb_rst = new();
-        mon2cov = new();
+        mon2cov     = new();
 
         test2spi = new();
-        spi2scb = new();
-        spi2cov = new();
+        spi2scb  = new();
+        spi2cov  = new();
 
         test2i2c = new();
-        i2c2scb = new();
-        i2c2cov = new();
+        i2c2scb  = new();
+        i2c2cov  = new();
 
         test2rx = new();
-        rx2scb = new();
-        rx2cov = new();
+        rx2scb  = new();
+        rx2cov  = new();
 
         tx2scb = new();
         tx2cov = new();
 
         drv_axi = new(vif_axi, test2drv);
         mon_axi = new(vif_axi, mon2scb, mon2scb_rst, mon2cov);
-        scb = new(mon2scb, mon2scb_rst, spi2scb, i2c2scb, rx2scb, tx2scb);
+        scb     = new(mon2scb, mon2scb_rst, spi2scb, i2c2scb, rx2scb, tx2scb);
         slv_spi = new(vif_spi, test2spi, spi2scb, spi2cov);
         slv_i2c = new(vif_i2c, test2i2c, i2c2scb, i2c2cov);
-        drv_rx = new(vif_uart, clk_period, test2rx, rx2scb, rx2cov);
-        mon_tx = new(vif_uart, clk_period, tx2scb, tx2cov);
-        cov = new(mon2cov, spi2cov, i2c2cov, rx2cov, tx2cov);
+        drv_rx  = new(vif_uart, clk_period, test2rx, rx2scb, rx2cov);
+        mon_tx  = new(vif_uart, clk_period, tx2scb, tx2cov);
+        cov     = new(mon2cov, spi2cov, i2c2cov, rx2cov, tx2cov);
     endfunction
 
+    // ========================================================
+    // RUN
+    // ========================================================
+
+    // Launch every agent, scoreboard, and coverage collector in parallel
     task run();
         fork
             drv_axi.run();

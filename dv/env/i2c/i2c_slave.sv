@@ -1,23 +1,36 @@
 class i2c_slave;
 
+    // ========================================================
+    // HANDLES
+    // ========================================================
+
     virtual i2c_if.slave vif;
 
     mailbox #(i2c_txn) test2i2c;
     mailbox #(i2c_txn) i2c2scb;
     mailbox #(i2c_txn) i2c2cov;
 
-    function new (
+    // ========================================================
+    // CONSTRUCTION
+    // ========================================================
+
+    function new(
         virtual i2c_if.slave vif,
         mailbox #(i2c_txn) test2i2c,
         mailbox #(i2c_txn) i2c2scb,
         mailbox #(i2c_txn) i2c2cov
-        );
-        this.vif = vif;
+    );
+        this.vif      = vif;
         this.test2i2c = test2i2c;
-        this.i2c2scb = i2c2scb;
-        this.i2c2cov = i2c2cov;
+        this.i2c2scb  = i2c2scb;
+        this.i2c2cov  = i2c2cov;
     endfunction
-    
+
+    // ========================================================
+    // MAIN LOOP
+    // ========================================================
+
+    // Emulate an I2C slave: capture address/direction, ACK, then move one data byte
     task run();
         forever begin
             i2c_txn txn;
@@ -42,7 +55,7 @@ class i2c_slave;
 
             @(negedge vif.scl); // address ack/nack (1 bit)
             if (txn.nack) vif.sda_oe = 0;
-            else vif.sda_oe = 1;
+            else          vif.sda_oe = 1;
 
             @(negedge vif.scl); // end of ack/nack, slave write starts now
             vif.sda_oe = 0;
@@ -64,7 +77,7 @@ class i2c_slave;
                 @(negedge vif.scl); // data ack/nack (1 bit)
                 if (!txn.rw_n_sampled) begin
                     if (txn.nack) vif.sda_oe = 0;
-                    else vif.sda_oe = 1;
+                    else          vif.sda_oe = 1;
                 end else begin
                     vif.sda_oe = 0;
                 end

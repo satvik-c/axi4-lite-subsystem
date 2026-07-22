@@ -57,14 +57,14 @@ module uart_wrapper
 
     // Instantiate transmit FIFO queue
     uart_fifo fifo (
-        .clk     (clk),
-        .rst_n   (rst_n),
-        .wr_en   (wr_en),
-        .wr_data (wr_data),
-        .rd_en   (rd_en),
-        .rd_data (rd_data),
-        .full    (full),
-        .empty   (empty)
+        .clk(clk),
+        .rst_n(rst_n),
+        .wr_en(wr_en),
+        .wr_data(wr_data),
+        .rd_en(rd_en),
+        .rd_data(rd_data),
+        .full(full),
+        .empty(empty)
     );
 
 
@@ -74,16 +74,16 @@ module uart_wrapper
 
     // Instantiate UART transmitter
     uart_tx tx (
-        .clk         (clk),
-        .rst_n       (rst_n),
-        .tx_start    (tx_start),
-        .tx_data     (rd_data),
-        .baud_div    (baud_div),
-        .parity_en   (parity_en),
-        .parity_mode (parity_mode),
-        .stop_bits   (stop_bits),
-        .tx_busy     (tx_busy),
-        .tx_out      (tx_out)
+        .clk(clk),
+        .rst_n(rst_n),
+        .tx_start(tx_start),
+        .tx_data(rd_data),
+        .baud_div(baud_div),
+        .parity_en(parity_en),
+        .parity_mode(parity_mode),
+        .stop_bits(stop_bits),
+        .tx_busy(tx_busy),
+        .tx_out(tx_out)
     );
 
 
@@ -93,18 +93,18 @@ module uart_wrapper
 
     // Instantiate UART receiver
     uart_rx rx (
-        .clk         (clk),
-        .rst_n       (rst_n),
-        .rx_en       (rx_en),
-        .baud_div    (baud_div),
-        .parity_en   (parity_en),
-        .parity_mode (parity_mode),
-        .stop_bits   (stop_bits),
-        .rx_data     (rx_data),
-        .rx_valid    (rx_valid_internal),
-        .rx_error    (),
-        .rx_perr     (rx_perr_internal),
-        .rx_in       (rx_in)
+        .clk(clk),
+        .rst_n(rst_n),
+        .rx_en(rx_en),
+        .baud_div(baud_div),
+        .parity_en(parity_en),
+        .parity_mode(parity_mode),
+        .stop_bits(stop_bits),
+        .rx_data(rx_data),
+        .rx_valid(rx_valid_internal),
+        .rx_error(),
+        .rx_perr(rx_perr_internal),
+        .rx_in(rx_in)
     );
 
 

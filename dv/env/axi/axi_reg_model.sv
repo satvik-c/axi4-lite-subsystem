@@ -6,42 +6,54 @@ typedef enum logic [1:0] {
     RESP_DECERR = 2'b11
 } axi_resp_e;
 
-// Built from docs/MAS.md §6-8 only (address page decode, register map,
-// side-effect rules) — deliberately not derived from the regs RTL, so it
+// Built from docs/MAS.md Sec. 6-8 only (address page decode, register map,
+// side-effect rules) - deliberately not derived from the regs RTL, so it
 // stays an independent check rather than a restatement of the DUT.
 //
 // Only bus-deterministic fields are tracked: write-strobe masking,
 // read-only write protection, and decode errors. Core/queue-timed status
 // (BUSY, the *setting* of RX_VALID/NACK/RX_OVERRUN/RX_PERR, and the
-// content of any *_STATUS/*_RXDATA register) is out of scope per MAS §8 —
+// content of any *_STATUS/*_RXDATA register) is out of scope per MAS Sec. 8 -
 // those are checked by a separate white-box status-forwarding compare in
 // the scoreboard, not predicted here. UART_TXDATA's FIFO push/drop
 // behavior belongs to the separate UART Transmit Queue Model.
 class axi_reg_model;
 
-    // SPI page (MAS §7.1)
+    // ========================================================
+    // REGISTER FIELDS
+    // ========================================================
+
+    // SPI page (MAS Sec. 7.1)
     logic        spi_en;
     logic [7:0]  spi_txdata;
     logic        spi_cpol, spi_cpha;
     logic [15:0] spi_clkdiv;
 
-    // I2C page (MAS §7.2)
+    // I2C page (MAS Sec. 7.2)
     logic        i2c_en;
     logic        i2c_rw_n;
     logic [6:0]  i2c_addr;
     logic [7:0]  i2c_txdata;
     logic [15:0] i2c_clkdiv;
 
-    // UART page (MAS §7.3)
+    // UART page (MAS Sec. 7.3)
     logic        uart_tx_en, uart_rx_en;
     logic [15:0] uart_baud_div;
     logic        uart_parity_en, uart_parity_mode, uart_stop_bits;
+
+    // ========================================================
+    // CONSTRUCTION
+    // ========================================================
 
     function new();
         reset();
     endfunction
 
-    // MAS §2: reset reverts configuration registers to their defaults.
+    // ========================================================
+    // RESET
+    // ========================================================
+
+    // MAS Sec. 2: reset reverts configuration registers to their defaults.
     // Called on every ARESETn assertion, not just at construction time.
     function void reset();
         spi_en = 0; spi_txdata = 0; spi_cpol = 0; spi_cpha = 0; spi_clkdiv = 0;
@@ -50,14 +62,16 @@ class axi_reg_model;
         uart_parity_en = 0; uart_parity_mode = 0; uart_stop_bits = 0;
     endfunction
 
-    // ==================== WRITE ====================
+    // ========================================================
+    // WRITE PATH
+    // ========================================================
 
     function axi_resp_e write(logic [11:0] addr, logic [31:0] wdata, logic [3:0] wstrb);
-        case (addr[11:8])                        // MAS §6 page select
+        case (addr[11:8])                        // MAS Sec. 6 page select
             4'h0:    return write_spi(addr[7:2], wdata, wstrb);
             4'h1:    return write_i2c(addr[7:2], wdata, wstrb);
             4'h2:    return write_uart(addr[7:2], wdata, wstrb);
-            default: return RESP_DECERR;          // MAS §6 "Others: Reserved"
+            default: return RESP_DECERR;          // MAS Sec. 6 "Others: Reserved"
         endcase
     endfunction
 
@@ -65,7 +79,7 @@ class axi_reg_model;
         case (off)
             SPI_CTRL: begin
                 if (wstrb[0]) spi_en = wdata[SPI_CTRL_EN];
-                // START (bit 1) self-clears (MAS §7.1/§8) — no persistent state.
+                // START (bit 1) self-clears (MAS Sec. 7.1/Sec. 8) - no persistent state.
                 return RESP_OKAY;
             end
             SPI_TXDATA: begin
@@ -82,7 +96,7 @@ class axi_reg_model;
                 return RESP_OKAY;
             end
             SPI_STATUS, SPI_RXDATA:
-                return RESP_SLVERR;               // MAS §8 write protection
+                return RESP_SLVERR;               // MAS Sec. 8 write protection
             default:
                 return RESP_DECERR;                // unmapped offset in page
         endcase
@@ -96,7 +110,7 @@ class axi_reg_model;
                     i2c_rw_n = wdata[I2C_CTRL_RW_N];
                 end
                 // START (bit 1) self-clears. NACK's clear-on-next-START (MAS
-                // §7.2) isn't checked here since NACK itself isn't modeled.
+                // Sec. 7.2) isn't checked here since NACK itself isn't modeled.
                 return RESP_OKAY;
             end
             I2C_ADDR: begin
@@ -130,7 +144,7 @@ class axi_reg_model;
             end
             UART_TXDATA:
                 // FIFO push/drop is modeled by the separate UART Transmit
-                // Queue Model — MAS §8 guarantees the bus always sees OKAY.
+                // Queue Model - MAS Sec. 8 guarantees the bus always sees OKAY.
                 return RESP_OKAY;
             UART_CFG: begin
                 if (wstrb[0]) uart_baud_div[7:0]  = wdata[7:0];
@@ -149,7 +163,9 @@ class axi_reg_model;
         endcase
     endfunction
 
-    // ==================== READ ====================
+    // ========================================================
+    // READ PATH
+    // ========================================================
 
     function axi_resp_e read(logic [11:0] addr, output logic [31:0] rdata);
         case (addr[11:8])
@@ -166,7 +182,7 @@ class axi_reg_model;
             SPI_TXDATA: begin rdata = {24'b0, spi_txdata};   return RESP_OKAY; end
             SPI_CFG:    begin rdata = {spi_clkdiv, 14'b0, spi_cpha, spi_cpol}; return RESP_OKAY; end
             SPI_STATUS, SPI_RXDATA: begin
-                rdata = 'x;   // core-timed — scoreboard must skip this compare
+                rdata = 'x;   // core-timed - scoreboard must skip this compare
                 return RESP_OKAY;
             end
             default: begin rdata = '0; return RESP_DECERR; end
@@ -198,7 +214,7 @@ class axi_reg_model;
                 return RESP_OKAY;
             end
             UART_STATUS, UART_TXDATA, UART_RXDATA: begin
-                // TXDATA has no persistent readback value (FIFO push, MAS §4);
+                // TXDATA has no persistent readback value (FIFO push, MAS Sec. 4);
                 // STATUS/RXDATA are core/queue-timed. All three skipped here.
                 rdata = 'x;
                 return RESP_OKAY;

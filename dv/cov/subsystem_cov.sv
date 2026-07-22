@@ -1,5 +1,6 @@
 import regs_pkg::*;
 
+// Classifications derived from AXI timing for functional coverage
 typedef enum {
     ADDR_FIRST,
     DATA_FIRST,
@@ -13,6 +14,10 @@ typedef enum {
 
 class subsystem_cov;
 
+    // ========================================================
+    // HANDLES
+    // ========================================================
+
     mailbox #(axi_txn) mon2cov;
     mailbox #(spi_txn) spi2cov;
     mailbox #(i2c_txn) i2c2cov;
@@ -21,6 +26,11 @@ class subsystem_cov;
 
     logic fifo_seen_full;
 
+    // ========================================================
+    // COVERGROUPS
+    // ========================================================
+
+    // AXI transaction shape: type, register, strobes, arrival order, response
     covergroup cg_axi with function sample(axi_txn txn_axi, arrival_order_e order, spacing_e space);
 
         cp_txn_type : coverpoint txn_axi.is_write {
@@ -101,11 +111,12 @@ class subsystem_cov;
         }
         cx_order_resp   : cross cp_arrival_order, cp_response;
         cx_spacing_type : cross cp_spacing, cp_txn_type;
-        
+
     endgroup
 
+    // SPI: clock polarity/phase and MOSI/MISO data patterns
     covergroup cg_spi with function sample(spi_txn txn_spi);
-        
+
         cp_cpol : coverpoint txn_spi.cpol {
             bins zero = { 0 };
             bins one = { 1 };
@@ -142,8 +153,9 @@ class subsystem_cov;
 
     endgroup
 
+    // I2C: direction, ACK/NACK, and TX/RX data patterns
     covergroup cg_i2c with function sample(i2c_txn txn_i2c);
-        
+
         cp_rw_n : coverpoint txn_i2c.rw_n_expected {
             bins write = { 0 };
             bins read = { 1 };
@@ -174,6 +186,7 @@ class subsystem_cov;
 
     endgroup
 
+    // UART RX: parity mode, stop bits, and parity-error injection
     covergroup cg_rx with function sample(uart_rx_txn txn_rx);
 
         cp_parity : coverpoint {txn_rx.parity_en, txn_rx.parity_mode} {
@@ -196,6 +209,7 @@ class subsystem_cov;
 
     endgroup
 
+    // UART TX: parity mode, stop bits, and data patterns
     covergroup cg_tx with function sample(uart_tx_txn txn_tx);
 
         cp_parity : coverpoint {txn_tx.parity_en, txn_tx.parity_mode} {
@@ -221,8 +235,9 @@ class subsystem_cov;
 
     endgroup
 
+    // UART FIFO: occupancy, event type, and full-to-empty cycle
     covergroup cg_fifo with function sample(uart_fifo_txn txn_fifo, logic complete);
-        
+
         cp_occupancy : coverpoint txn_fifo.occupancy {
             bins empty = { 0 };
             bins full = { 64 };
@@ -242,8 +257,11 @@ class subsystem_cov;
 
     endgroup
 
+    // ========================================================
+    // CONSTRUCTION
+    // ========================================================
 
-    function new (mailbox #(axi_txn) mon2cov, mailbox #(spi_txn) spi2cov, mailbox #(i2c_txn) i2c2cov, mailbox #(uart_rx_txn) rx2cov, mailbox #(uart_tx_txn) tx2cov);
+    function new(mailbox #(axi_txn) mon2cov, mailbox #(spi_txn) spi2cov, mailbox #(i2c_txn) i2c2cov, mailbox #(uart_rx_txn) rx2cov, mailbox #(uart_tx_txn) tx2cov);
         this.mon2cov = mon2cov;
         this.spi2cov = spi2cov;
         this.i2c2cov = i2c2cov;
@@ -257,6 +275,10 @@ class subsystem_cov;
         cg_tx = new();
         cg_fifo = new();
     endfunction
+
+    // ========================================================
+    // REPORT
+    // ========================================================
 
     function void print();
         $display("==============================================");
@@ -317,6 +339,10 @@ class subsystem_cov;
         $display("==============================================");
     endfunction
 
+    // ========================================================
+    // CLASSIFIERS
+    // ========================================================
+
     function void classify(input axi_txn txn, output arrival_order_e order, output spacing_e space);
         if (txn.awvalid_delay < txn.wvalid_delay) order = ADDR_FIRST;
         else if (txn.awvalid_delay > txn.wvalid_delay) order = DATA_FIRST;
@@ -335,12 +361,16 @@ class subsystem_cov;
         end
     endfunction
 
+    // ========================================================
+    // MAIN LOOP
+    // ========================================================
+
     task run();
         fork
             forever begin
                 arrival_order_e order;
                 spacing_e space;
-                
+
                 axi_txn txn_axi;
                 mon2cov.get(txn_axi);
                 classify(txn_axi, order, space);

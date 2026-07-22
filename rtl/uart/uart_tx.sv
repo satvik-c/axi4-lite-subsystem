@@ -95,11 +95,11 @@ module uart_tx
 
     // Instantiate baud generator for tx timing
     baud_gen gen (
-        .clk       (clk),
-        .rst_n     (rst_n),
-        .enable    (enable),
-        .div       (baud_div_reg),
-        .baud_tick (baud_tick)
+        .clk(clk),
+        .rst_n(rst_n),
+        .enable(enable),
+        .div(baud_div_reg),
+        .baud_tick(baud_tick)
     );
 
 
@@ -114,19 +114,19 @@ module uart_tx
     end
 
     // Capture configuration parameters on transaction start
-        always_ff @(posedge clk) begin
-            if (!rst_n) begin
-                baud_div_reg    <= '0;
-                parity_en_reg   <= 0;
-                parity_mode_reg <= 0;
-                stop_bits_reg   <= 0;
-            end else if (current_state == IDLE && tx_start) begin
-                baud_div_reg    <= baud_div;
-                parity_en_reg   <= parity_en;
-                parity_mode_reg <= parity_mode;
-                stop_bits_reg   <= stop_bits;
-            end
+    always_ff @(posedge clk) begin
+        if (!rst_n) begin
+            baud_div_reg    <= '0;
+            parity_en_reg   <= 0;
+            parity_mode_reg <= 0;
+            stop_bits_reg   <= 0;
+        end else if (current_state == IDLE && tx_start) begin
+            baud_div_reg    <= baud_div;
+            parity_en_reg   <= parity_en;
+            parity_mode_reg <= parity_mode;
+            stop_bits_reg   <= stop_bits;
         end
+    end
 
     // Next-state transition combinational logic
     always_comb begin

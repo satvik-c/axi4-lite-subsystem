@@ -1,23 +1,36 @@
 class spi_slave;
 
+    // ========================================================
+    // HANDLES
+    // ========================================================
+
     virtual spi_if.slave vif;
 
     mailbox #(spi_txn) test2spi;
     mailbox #(spi_txn) spi2scb;
     mailbox #(spi_txn) spi2cov;
 
-    function new (
+    // ========================================================
+    // CONSTRUCTION
+    // ========================================================
+
+    function new(
         virtual spi_if.slave vif,
         mailbox #(spi_txn) test2spi,
         mailbox #(spi_txn) spi2scb,
         mailbox #(spi_txn) spi2cov
     );
-        this.vif = vif;
+        this.vif      = vif;
         this.test2spi = test2spi;
-        this.spi2scb = spi2scb;
-        this.spi2cov = spi2cov;
+        this.spi2scb  = spi2scb;
+        this.spi2cov  = spi2cov;
     endfunction
 
+    // ========================================================
+    // MAIN LOOP
+    // ========================================================
+
+    // Per transaction: shift MISO out and sample MOSI across the SCLK burst
     task run();
         forever begin
             spi_txn txn;
@@ -36,6 +49,7 @@ class spi_slave;
             sample_sclk_val = ~(txn.cpol ^ txn.cpha);
 
             fork
+                // Drive MISO MSB-first, phase-aligned to CPHA
                 begin
                     if (txn.cpha == 0) begin
                         vif.miso = txn.miso[7];
@@ -53,6 +67,7 @@ class spi_slave;
                     @(posedge vif.cs_n);
                     vif.miso = 1'bz;
                 end
+                // Sample MOSI MSB-first on the opposite edge
                 begin
                     logic [7:0] sampled_mosi;
                     for (int i = 7; i >= 0; i--) begin
@@ -66,6 +81,6 @@ class spi_slave;
             spi2scb.put(txn);
             spi2cov.put(txn);
         end
-    endtask;
+    endtask
 
 endclass

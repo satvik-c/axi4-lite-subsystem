@@ -84,75 +84,75 @@ module uart_rx
     logic parity_en_reg;
     logic parity_mode_reg;
     logic stop_bits_reg;
-    
-    
+
+
     // ========================================================
     // DATAPATH ASSIGNMENTS
     // ========================================================
-    
+
     assign data_done = (bit_counter == BIT_COUNTER_W'(DATA_BITS - 1));
     assign stop_done = (bit_counter == BIT_COUNTER_W'(stop_bits_reg));
     assign os_div    = baud_div_reg >> 4;
-    
-    
+
+
     // ========================================================
     // BAUD GENERATION
     // ========================================================
-    
+
     // Instantiate baud generator for oversampling
     baud_gen gen (
-        .clk       (clk),
-        .rst_n     (rst_n),
-        .enable    (enable),
-        .div       (os_div),
-        .baud_tick (os_tick)
-        );
-        
-        
-        // ========================================================
-        // FSM
-        // ========================================================
-        
-        // Sequential state transition
-        always_ff @(posedge clk) begin
-            if (!rst_n) current_state <= IDLE;
-            else        current_state <= next_state;
+        .clk(clk),
+        .rst_n(rst_n),
+        .enable(enable),
+        .div(os_div),
+        .baud_tick(os_tick)
+    );
+
+
+    // ========================================================
+    // FSM
+    // ========================================================
+
+    // Sequential state transition
+    always_ff @(posedge clk) begin
+        if (!rst_n) current_state <= IDLE;
+        else        current_state <= next_state;
+    end
+
+    // Capture configuration parameters on transaction start
+    always_ff @(posedge clk) begin
+        if (!rst_n) begin
+            baud_div_reg    <= '0;
+            parity_en_reg   <= 0;
+            parity_mode_reg <= 0;
+            stop_bits_reg   <= 0;
+        end else if (current_state == IDLE && (!rx_in && prev_rx_in)) begin
+            baud_div_reg    <= baud_div;
+            parity_en_reg   <= parity_en;
+            parity_mode_reg <= parity_mode;
+            stop_bits_reg   <= stop_bits;
         end
-        
-        // Capture configuration parameters on transaction start
-        always_ff @(posedge clk) begin
-            if (!rst_n) begin
-                baud_div_reg    <= '0;
-                parity_en_reg   <= 0;
-                parity_mode_reg <= 0;
-                stop_bits_reg   <= 0;
-            end else if (current_state == IDLE && (!rx_in && prev_rx_in)) begin
-                baud_div_reg    <= baud_div;
-                parity_en_reg   <= parity_en;
-                parity_mode_reg <= parity_mode;
-                stop_bits_reg   <= stop_bits;
-            end
-        end
-        
-        // Next-state transition combinational logic
-        always_comb begin
-            next_state = current_state;
-            
-            if (!rx_en) begin
-                next_state = IDLE;
-            end else begin
-                case (current_state)
-                    IDLE: begin
-                        if (!rx_in && prev_rx_in) next_state = START;
+    end
+
+    // Next-state transition combinational logic
+    always_comb begin
+        next_state = current_state;
+
+        if (!rx_en) begin
+            next_state = IDLE;
+        end else begin
+            case (current_state)
+                IDLE: begin
+                    if (!rx_in && prev_rx_in) next_state = START;
+                end
+
+                START: begin
+                    if (os_tick && (os_counter == 4'd8)) begin
+                        if (rx_in == 1'b0) next_state = DATA;
+                        else               next_state = IDLE;
                     end
-                    
-                    START: begin
-                        if (os_tick && (os_counter == 4'd8)) begin
-                            if (rx_in == 1'b0) next_state = DATA;
-                            else               next_state = IDLE;
-                        end
-                    end
-                    
+                end
+
                 DATA: begin
                     if (os_tick && (os_counter == 4'd15) && data_done) begin
                         if (parity_en_reg) next_state = PARITY;

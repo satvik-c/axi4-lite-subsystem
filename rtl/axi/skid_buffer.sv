@@ -153,39 +153,39 @@ module skid_buffer
 
     initial assume (!rst_n);
 
-    // assume master's VALID stays high until skid buffer's READY handshake
-    always @(posedge clk) begin
+    // Assume master's VALID stays high until skid buffer's READY handshake
+    always_ff @(posedge clk) begin
         if (rst_n && $past(rst_n) && $past(up_valid) && !$past(up_ready)) begin
             assume (up_valid);
             assume (up_data == $past(up_data));
         end
     end
 
-    // assert that FSM only enters defined states
-    always @(posedge clk) begin
+    // Assert that FSM only enters defined states
+    always_ff @(posedge clk) begin
         if (rst_n) assert (current_state == EMPTY || current_state == BUSY || current_state == FULL);
     end
 
-    // assert that skid buffer's READY never goes high when it's full
-    always @(posedge clk) begin
+    // Assert that skid buffer's READY never goes high when it's full
+    always_ff @(posedge clk) begin
         if (rst_n) assert (!(current_state == FULL && up_ready));
     end
 
-    // assert that skid buffer's VALID stays high until slave's READY handshake
-    always @(posedge clk) begin
+    // Assert that skid buffer's VALID stays high until slave's READY handshake
+    always_ff @(posedge clk) begin
         if (rst_n && $past(rst_n) && $past(down_valid) && !$past(down_ready)) begin
             assert (down_valid);
             assert (down_data == $past(down_data));
         end
     end
 
-    // assign arbitrary tag to incoming data
+    // Assign arbitrary tag to incoming data
     (* anyconst *) logic [WIDTH-1:0] f_tag;
     logic                            f_down_has_tag;
     logic                            f_skid_has_tag;
 
-    // tagging data loaded to down_data or skid_data or transferred
-    always @(posedge clk) begin
+    // Tagging data loaded to down_data or skid_data or transferred
+    always_ff @(posedge clk) begin
         if (!rst_n) begin
             f_down_has_tag <= 1'b0;
             f_skid_has_tag <= 1'b0;
@@ -198,15 +198,15 @@ module skid_buffer
         end
     end
 
-    // assert that every tagged data == arbitrary f_tag
-    always @(posedge clk) begin
+    // Assert that every tagged data == arbitrary f_tag
+    always_ff @(posedge clk) begin
         if (rst_n) begin
             if (f_down_has_tag) assert (down_data == f_tag);
             if (f_skid_has_tag) assert (skid_data == f_tag);
         end
     end
 
-    // assert that either down_data or skid_data is tagged 1 clk after skid buffer's handshake
+    // Assert that either down_data or skid_data is tagged 1 clk after skid buffer's handshake
     always_ff @(posedge clk) begin
         if (rst_n && $past(rst_n)) begin
             if ($past(up_valid && up_ready && (up_data == f_tag))) begin
@@ -215,8 +215,8 @@ module skid_buffer
         end
     end
 
-    // cover that FSM enters full, exits full, and loads data into skid_data
-    always @(posedge clk) begin
+    // Cover that FSM enters full, exits full, and loads data into skid_data
+    always_ff @(posedge clk) begin
         cover (current_state == FULL);
         cover (current_state == FULL && transfer_skid);
         cover (f_skid_has_tag);

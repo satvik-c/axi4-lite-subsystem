@@ -1,3 +1,4 @@
+// Snapshot of live UART config registers, published for the RX/TX BFMs to read
 class uart_dut_state;
     static logic [15:0] baud_div;
     static logic        parity_en;

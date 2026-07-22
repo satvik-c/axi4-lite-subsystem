@@ -1,20 +1,34 @@
 class axi_monitor;
 
+    // ========================================================
+    // HANDLES
+    // ========================================================
+
     virtual axi4_lite_if.tb_monitor vif;
     mailbox #(axi_txn) mon2scb;
     mailbox mon2scb_rst;
     mailbox #(axi_txn) mon2cov;
 
+    // Cycle bookkeeping for inter-transaction gap reconstruction
     longint cycle_count;
     longint last_accepted_cycle;
 
+    // ========================================================
+    // CONSTRUCTION
+    // ========================================================
+
     function new(virtual axi4_lite_if.tb_monitor vif, mailbox #(axi_txn) mon2scb, mailbox mon2scb_rst, mailbox #(axi_txn) mon2cov);
-        this.vif = vif;
-        this.mon2scb = mon2scb;
+        this.vif         = vif;
+        this.mon2scb     = mon2scb;
         this.mon2scb_rst = mon2scb_rst;
-        this.mon2cov = mon2cov;
+        this.mon2cov     = mon2cov;
     endfunction
 
+    // ========================================================
+    // WRITE MONITOR
+    // ========================================================
+
+    // Time the AW and W channels independently, then accept the B response
     task monitor_write();
         int awvalid_delay;
         int wvalid_delay;
@@ -23,8 +37,9 @@ class axi_monitor;
 
         axi_txn write_txn = new();
         write_txn.is_write = 1;
-        
+
         fork
+            // AW channel: measure valid-delay and capture the address
             begin
                 awvalid_delay = 0;
 
@@ -42,6 +57,7 @@ class axi_monitor;
                 write_txn.prot = vif.mon.AWPROT;
                 write_txn.awvalid_delay = awvalid_delay;
             end
+            // W channel: measure valid-delay and capture the data
             begin
                 wvalid_delay = 0;
 
@@ -73,6 +89,11 @@ class axi_monitor;
         mon2cov.put(write_txn);
     endtask
 
+    // ========================================================
+    // READ MONITOR
+    // ========================================================
+
+    // Time the AR valid-delay, then capture the read data and response
     task monitor_read();
         longint arvalid_cycle;
 
@@ -103,6 +124,11 @@ class axi_monitor;
         mon2cov.put(read_txn);
     endtask
 
+    // ========================================================
+    // MAIN LOOP
+    // ========================================================
+
+    // Spawn write/read monitors, count cycles, and tear down on reset
     task run();
         fork
             forever begin
@@ -114,7 +140,7 @@ class axi_monitor;
                             forever begin
                                 monitor_write();
                             end
-                            
+
                             forever begin
                                 monitor_read();
                             end
@@ -127,7 +153,7 @@ class axi_monitor;
                 @(vif.mon);
                 cycle_count++;
             end
-            
+
             forever begin
                 @(negedge vif.ARESETn);
                 disable mon_process;

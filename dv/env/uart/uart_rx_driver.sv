@@ -1,5 +1,9 @@
 class uart_rx_driver;
 
+    // ========================================================
+    // HANDLES
+    // ========================================================
+
     virtual uart_if.rx_driver vif;
     time clk_period;
 
@@ -7,14 +11,23 @@ class uart_rx_driver;
     mailbox #(uart_rx_txn) rx2scb;
     mailbox #(uart_rx_txn) rx2cov;
 
+    // ========================================================
+    // CONSTRUCTION
+    // ========================================================
+
     function new(virtual uart_if.rx_driver vif, time clk_period, mailbox #(uart_rx_txn) test2rx, mailbox #(uart_rx_txn) rx2scb, mailbox #(uart_rx_txn) rx2cov);
-        this.vif = vif;
+        this.vif        = vif;
         this.clk_period = clk_period;
-        this.test2rx = test2rx;
-        this.rx2scb = rx2scb;
-        this.rx2cov = rx2cov;
+        this.test2rx    = test2rx;
+        this.rx2scb     = rx2scb;
+        this.rx2cov     = rx2cov;
     endfunction
 
+    // ========================================================
+    // MAIN LOOP
+    // ========================================================
+
+    // Drive one UART frame bit-by-bit at the configured baud period
     task run();
         forever begin
             uart_rx_txn txn;
@@ -28,26 +41,30 @@ class uart_rx_driver;
             txn.stop_bits = uart_dut_state::stop_bits;
             baud_div = (uart_dut_state::baud_div == 16'd0) ? 16'd1 : uart_dut_state::baud_div;
 
+            // Start bit
             vif.rx_in = 0;
             #(baud_div * clk_period);
 
+            // Data bits, LSB first
             for (int i = 0; i < 8; i++) begin
                 vif.rx_in = txn.data[i];
                 #(baud_div * clk_period);
             end
 
+            // Parity bit, optionally corrupted
             if (txn.parity_en) begin
                 logic parity = (!txn.parity_mode) ? ^txn.data : ~^txn.data;
                 vif.rx_in = (txn.inject_perr) ? ~parity : parity;
                 #(baud_div * clk_period);
             end
 
+            // Stop bit(s)
             vif.rx_in = 1;
             #(baud_div * clk_period);
             if (txn.stop_bits) begin
                 #(baud_div * clk_period);
             end
-            
+
             rx2scb.put(txn);
             rx2cov.put(txn);
         end

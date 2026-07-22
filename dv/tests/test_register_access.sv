@@ -1,8 +1,9 @@
+// Directed: sweep the register map with every strobe pattern, plus decode boundaries
 class test_register_access;
 
-    env e;
+    env     e;
     axi_txn txn;
-    int counter;
+    int     counter;
 
     logic [3:0] wstrb_arr [8] = '{
         4'b1111,
@@ -22,6 +23,7 @@ class test_register_access;
     task run();
         counter = e.scb.count;
 
+        // Every mapped page/offset: all write-strobe patterns, then a read
         for (logic [3:0] i = 0; i <= 4'h2; i++) begin
             for (logic [5:0] j = 0; j <= 6'h05; j++) begin
                 if (j == 6'h05 && i != 4'h1) continue;
@@ -38,6 +40,7 @@ class test_register_access;
             end
         end
 
+        // Reserved pages 0x3-0xF: one write and one read each
         for (int i = 4'h3; i <= 4'hF; i++) begin
             txn = new(1, i[3:0], 6'h0, 32'hAAAA_AAAA);
             e.test2drv.put(txn);
@@ -48,6 +51,7 @@ class test_register_access;
             counter++;
         end
 
+        // Per page: first-unmapped offset and the top offset
         for (logic [3:0] i = 0; i <= 4'h2; i++) begin
             logic [5:0] boundary_off = (i == 4'h1) ? 6'h6 : 6'h5;
 
@@ -69,7 +73,6 @@ class test_register_access;
         end
 
         wait (e.scb.count == counter);
-
     endtask
 
 endclass

@@ -2,6 +2,10 @@
 
 module tb_top;
 
+    // ========================================================
+    // CLOCK & RESET
+    // ========================================================
+
     localparam time CLK_PERIOD = 10ns;
 
     logic clk;
@@ -20,6 +24,10 @@ module tb_top;
         rst_n = 1;
     end
 
+    // ========================================================
+    // DUT & INTERFACES
+    // ========================================================
+
     axi4_lite_if axi_if(clk, rst_n);
 
     initial begin
@@ -28,12 +36,12 @@ module tb_top;
         axi_if.ARVALID = 1'b0;
     end
 
-    // Peripheral Pins
+    // Peripheral interfaces
     spi_if spi_vif(rst_n);
     i2c_if i2c_vif(rst_n);
     uart_if uart_vif();
 
-    // Loopbacks & Pull-ups
+    // Open-drain SDA pull-up
     assign (pull1, pull0) i2c_vif.sda = 1'b1;
 
     axi4_lite_subsystem dut (
@@ -48,6 +56,10 @@ module tb_top;
         .rx_in(uart_vif.rx_in)
     );
 
+    // ========================================================
+    // BIND ASSERTIONS & TAPS
+    // ========================================================
+
     bind axi4_lite_subsystem protocol_sva u_protocol_sva (.vif(s_axi));
     bind skid_buffer     skid_buffer_sva  u_skid_buffer_sva  (.*);
     bind uart_fifo       uart_fifo_sva    u_uart_fifo_sva    (.*);
@@ -60,6 +72,10 @@ module tb_top;
     bind spi_regs        spi_regs_tap     u_spi_regs_tap     (.*);
     bind i2c_regs        i2c_regs_tap     u_i2c_regs_tap     (.*);
     bind uart_regs       uart_regs_tap    u_uart_regs_tap    (.*);
+
+    // ========================================================
+    // TEST DISPATCH
+    // ========================================================
 
     task automatic run_test(string name, env e);
         case (name)
@@ -87,6 +103,10 @@ module tb_top;
         endcase
     endtask
 
+    // ========================================================
+    // MAIN
+    // ========================================================
+
     initial begin
         string test_name;
         e = new(axi_if, spi_vif, i2c_vif, uart_vif, CLK_PERIOD);
@@ -110,6 +130,7 @@ module tb_top;
         $finish;
     end
 
+    // Live transaction counter
     initial begin
         static int last_count = 0;
         wait (e != null);

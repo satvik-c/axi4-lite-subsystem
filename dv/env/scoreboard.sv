@@ -2,6 +2,10 @@ import regs_pkg::*;
 
 class scoreboard;
 
+    // ========================================================
+    // HANDLES
+    // ========================================================
+
     mailbox #(axi_txn) mon2scb;
     mailbox mon2scb_rst;
     mailbox #(spi_txn) spi2scb;
@@ -9,36 +13,50 @@ class scoreboard;
     mailbox #(uart_rx_txn) rx2scb;
     mailbox #(uart_tx_txn) tx2scb;
 
+    // ========================================================
+    // STATE
+    // ========================================================
+
     axi_reg_model reg_model;
     int count, errors;
 
-    logic spi_rx_valid_expected;
+    // Expected peripheral status, armed as slave/driver transactions complete
+    logic       spi_rx_valid_expected;
     logic [7:0] spi_rxdata_expected;
 
-    logic i2c_rx_valid_expected;
-    logic i2c_nack_expected;
+    logic       i2c_rx_valid_expected;
+    logic       i2c_nack_expected;
     logic [7:0] i2c_rxdata_expected;
 
-    logic uart_rx_valid_expected;
+    logic       uart_rx_valid_expected;
     logic [7:0] uart_rxdata_expected;
-    logic uart_rx_perr_expected;
-    logic uart_rx_overrun_expected;
+    logic       uart_rx_perr_expected;
+    logic       uart_rx_overrun_expected;
+
+    // ========================================================
+    // CONSTRUCTION
+    // ========================================================
 
     function new(mailbox #(axi_txn) mon2scb, mailbox mon2scb_rst, mailbox #(spi_txn) spi2scb, mailbox #(i2c_txn) i2c2scb, mailbox #(uart_rx_txn) rx2scb, mailbox #(uart_tx_txn) tx2scb);
-        this.mon2scb = mon2scb;
+        this.mon2scb     = mon2scb;
         this.mon2scb_rst = mon2scb_rst;
-        this.spi2scb = spi2scb;
-        this.i2c2scb = i2c2scb;
-        this.rx2scb = rx2scb;
-        this.tx2scb = tx2scb;
-        
+        this.spi2scb     = spi2scb;
+        this.i2c2scb     = i2c2scb;
+        this.rx2scb      = rx2scb;
+        this.tx2scb      = tx2scb;
+
         reg_model = new();
-        count = 0;
-        errors = 0;
+        count     = 0;
+        errors    = 0;
     endfunction
+
+    // ========================================================
+    // MAIN LOOP
+    // ========================================================
 
     task run();
         fork
+            // AXI: compare bus response and read data against the register model
             forever begin
                 axi_txn mon_txn;
                 logic [1:0] exp_resp;
@@ -66,7 +84,7 @@ class scoreboard;
                             mon_txn.addr, exp_resp, exp_rdata, mon_txn.resp, mon_txn.rdata);
                         errors++;
                     end
-                    
+
                     if (mon_txn.addr[11:8] == 4'h0 && mon_txn.addr[7:2] == SPI_STATUS) begin
                         if (mon_txn.rdata[SPI_STATUS_RXVALID] != spi_rx_valid_expected) begin
                             $error("[spi] RX_VALID mismatch: expected=%0d, got=%0d", spi_rx_valid_expected, mon_txn.rdata[SPI_STATUS_RXVALID]);
@@ -131,6 +149,7 @@ class scoreboard;
                 count++;
             end
 
+            // SPI: check the observed MOSI, then arm the expected RX status/data
             forever begin
                 spi_txn txn_spi;
                 spi2scb.get(txn_spi);
@@ -146,6 +165,7 @@ class scoreboard;
                 count++;
             end
 
+            // I2C: check address/direction/data, then arm the expected status
             forever begin
                 i2c_txn txn_i2c;
                 i2c2scb.get(txn_i2c);
@@ -170,6 +190,7 @@ class scoreboard;
                 count++;
             end
 
+            // UART RX: arm expected status/data, flagging overrun on back-to-back frames
             forever begin
                 uart_rx_txn txn_rx;
                 rx2scb.get(txn_rx);
@@ -182,6 +203,7 @@ class scoreboard;
                 count++;
             end
 
+            // UART TX: match the wire byte against the queue model, then check parity
             forever begin
                 logic [7:0] expected;
 
@@ -211,6 +233,7 @@ class scoreboard;
                 count++;
             end
 
+            // Reset: revert the register model on every reset pulse
             forever begin
                 bit dummy;
                 mon2scb_rst.get(dummy);

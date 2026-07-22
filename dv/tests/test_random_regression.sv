@@ -1,12 +1,17 @@
 import regs_pkg::*;
 
+// Constrained-random regression: weighted mix of per-peripheral operations
 class test_random_regression;
 
-    env e;
-    axi_txn txn;
-    spi_txn txn_spi;
-    i2c_txn txn_i2c;
-    uart_rx_txn txn_rx;
+    // ========================================================
+    // FIELDS
+    // ========================================================
+
+    env          e;
+    axi_txn      txn;
+    spi_txn      txn_spi;
+    i2c_txn      txn_i2c;
+    uart_rx_txn  txn_rx;
     logic [31:0] wdata;
 
     rand int op_select;
@@ -26,10 +31,19 @@ class test_random_regression;
     localparam I2C_CLK_DIV = 20;
     localparam BAUD_DIV = 32;
 
+    // ========================================================
+    // CONSTRUCTION
+    // ========================================================
+
     function new(env e);
         this.e = e;
     endfunction
 
+    // ========================================================
+    // STIMULUS TASKS
+    // ========================================================
+
+    // Configure SPI, transfer a random byte, and read it back
     task drive_spi();
         txn_spi = new();
         txn_spi.randomize();
@@ -70,6 +84,7 @@ class test_random_regression;
         wait (txn.done.triggered);
     endtask
 
+    // Configure I2C, run a random transfer, and read it back
     task drive_i2c();
         txn_i2c = new();
         txn_i2c.randomize();
@@ -111,9 +126,10 @@ class test_random_regression;
 
         txn = new(0, 4'h1, I2C_RXDATA);
         e.test2drv.put(txn);
-        wait(txn.done.triggered);
+        wait (txn.done.triggered);
     endtask
 
+    // Configure UART, receive a random byte, and read it out
     task drive_rx();
         wdata = 32'h0;
         wdata[UART_CFG_BAUDDIV_MSB : UART_CFG_BAUDDIV_LSB] = BAUD_DIV;
@@ -145,9 +161,10 @@ class test_random_regression;
 
         txn = new(0, 4'h2, UART_RXDATA);
         e.test2drv.put(txn);
-        wait(txn.done.triggered);
+        wait (txn.done.triggered);
     endtask
 
+    // Configure UART and push a random byte to transmit
     task drive_tx();
         wdata = 32'h0;
         wdata[UART_CFG_BAUDDIV_MSB : UART_CFG_BAUDDIV_LSB] = BAUD_DIV;
@@ -172,16 +189,21 @@ class test_random_regression;
         };
         e.test2drv.put(txn);
         wait (txn.done.triggered);
-    endtask;
+    endtask
 
+    // Issue one fully-random register access, excluding the START-write pages
     task access_reg();
         txn = new();
         txn.randomize() with {
             !(addr inside {12'h000, 12'h100});  // SPI_CTRL, I2C_CTRL
         };
         e.test2drv.put(txn);
-        wait(txn.done.triggered);
+        wait (txn.done.triggered);
     endtask
+
+    // ========================================================
+    // RUN
+    // ========================================================
 
     task run();
         repeat (NUM_ITERATIONS) begin
