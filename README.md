@@ -1,4 +1,4 @@
-# AXI4-Lite Peripheral Subsystem: Design & Verification Showcase
+# AXI4-Lite Peripheral Subsystem: RTL and Verification
 
 This repository presents an AXI4-Lite peripheral subsystem and its full verification environment, both built from scratch. I designed and wrote all of the RTL — the AXI4-Lite bridge and all three peripheral cores (SPI, I2C, and UART) — from a custom Microarchitecture Specification. To validate it, I developed a class-based verification environment using constrained-random stimulus, SystemVerilog Assertions, functional coverage closure, and formal verification. A living [Bug-Hunt Log](docs/vPlan.md#11-bug-hunt-log) records every RTL defect the environment caught, root-caused, and closed.
 
