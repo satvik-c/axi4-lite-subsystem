@@ -2,6 +2,8 @@
 
 This document defines the functional and microarchitectural behavior of the register-mapped AXI4-Lite Peripheral Subsystem. The subsystem acts as a bridge, exposing three serial communication controllers behind a single AXI4-Lite slave interface.
 
+![AXI4-Lite Subsystem Block Diagram](./rtl_microarch.png)
+
 ---
 
 ## 1. Interface Contract

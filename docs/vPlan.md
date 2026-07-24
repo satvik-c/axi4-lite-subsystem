@@ -2,7 +2,7 @@
 
 This document defines the verification strategy, testbench architecture, functional coverage targets, and sign-off criteria for the AXI4-Lite Peripheral Subsystem. 
 
-![DV Environment Topology](./subsystem_dv_environment.png)
+![DV Environment Topology](./dv_environment.png)
 
 ---
 
@@ -69,8 +69,8 @@ All assertions are implemented in a separate bind file and instantiated directly
 *   **B5 [assert]** `BRESP` and `RRESP` are never driven to `2'b01`. *(AXI4-Lite specialization: EXOKAY is legal in full AXI but unused here, as there is no exclusive access.)*
 *   **B6 [assert]** The write outstanding-transaction count is bounded to `[0, 1]`.
 *   **B7 [assert]** The read outstanding-transaction count is bounded to `[0, 1]`.
-*   **B8 [assert]** Write-response latency is bounded: `BVALID` asserts within a fixed number of cycles (target 3) of the **later** of the AW and W boundary handshakes. *(Exact bound confirmed against the implemented skid-buffer + FSM path during bring-up; see §11.)*
-*   **B9 [assert]** Read-response latency is bounded: `RVALID` asserts within a fixed number of cycles (target 3) of the AR boundary handshake. *(Same confirmation as B8.)*
+*   **B8 [assert]** Write-response latency is bounded: `BVALID` asserts within a fixed number of cycles (target 3) of the **later** of the AW and W boundary handshakes.
+*   **B9 [assert]** Read-response latency is bounded: `RVALID` asserts within a fixed number of cycles (target 3) of the AR boundary handshake.
 
 ### White-Box Design Assertions
 *   **W1 [assert]** The input skid buffers do not accept new upstream data when in the `FULL` state. *(Sim-unreachable given the current driver; waived — see §9.)*
@@ -164,12 +164,12 @@ Transactions are randomized across address ranges, write data, write strobes, ar
 
 ## 9. Waivers
 
-Coverage and assertion gaps that are structurally unreachable by the current testbench architecture, not merely rare — each already proven exhaustively by formal.
+This section documents coverage and assertion gaps that are structurally unreachable by the current testbench architecture (not merely rare). Every waived item has been proven exhaustively by formal verification.
 
-| Gap | Items | Why Unreachable | Disposition |
+| ID | Coverage Gap | Unreachable Reason | Disposition |
 |---|---|---|---|
-| Skid buffer `FULL` state | `W1`, `W2` (`in_ready` side) · `B1_AW`/`B1_W`/`B1_AR`, `B2_AW`/`B2_W`/`B2_AR` | `axi_driver` is single-outstanding: it never issues a new AW/W/AR while a prior transaction still holds `READY` low, so `FULL` is never entered and those `READY` signals never drop while `VALID` is high. | Waived from sim closure — `skid_buffer.sv`'s own formal block covers `current_state == FULL` exhaustively. |
-| UART FIFO concurrent push/pop | `W5`, `W6` · FIFO concurrent-event coverpoint/cross | Requires a same-cycle push and pop at the full/empty boundary, which AXI-driven stimulus can't reliably produce. | Waived from sim closure — already proven exhaustively by formal. |
+| **WAIVER - 01** | Skid buffer `FULL` state (Properties: `W1`, `W2`, `B1`, `B2`) | The `axi_driver` is single-outstanding. It never issues a new transaction while a prior transaction holds `READY` low, preventing the `FULL` state. | Waived from simulation closure. Proven exhaustively by formal verification in `skid_buffer.sv`. |
+| **WAIVER - 02** | UART FIFO concurrent push/pop (Properties: `W5`, `W6`) | Requires a same-cycle push and pop exactly at the full/empty boundary. AXI-driven stimulus cannot reliably produce this timing. | Waived from simulation closure. Proven exhaustively by formal verification. |
 
 ---
 
