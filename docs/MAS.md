@@ -21,7 +21,7 @@ The subsystem exposes the following logical interfaces and configurable paramete
 **System Parameters:**
 *   **Local Address Width**: Fixed at 12 bits (4 KB local address space). Not configurable.
 *   **System Data Width**: Fixed at 32 bits. Not configurable.
-*   **Transmit Queue Depth**: UART transmit FIFO depth, fixed at 64 entries. Not exposed as a top-level parameter.
+*   **Transmit FIFO Depth**: Fixed at 64 entries. Not exposed as a top-level parameter.
 
 **Top-Level Signal Contract**
 
@@ -63,7 +63,7 @@ The subsystem exposes the following logical interfaces and configurable paramete
 
 *   **Single Clock Domain**: All internal buffers, controllers, and peripheral cores operate on a single system clock. No Clock Domain Crossing (CDC) logic or separate clock networks are implemented.
 *   **Baud and Bit Rate Generation**: Serial baud rates and clock frequencies (such as SPI clock, I2C clock, and UART baud rates) are derived directly from the system clock using integer counters or clock enable signals.
-*   **Reset State**: On active-low reset assertion, all AXI validation signals are held low, transaction handlers return to their idle states, configuration registers revert to safe default values, and the UART transmit queue is cleared.
+*   **Reset State**: On active-low reset assertion, all AXI validation signals are held low, transaction handlers return to their idle states, configuration registers revert to safe default values, and the UART transmit FIFO is cleared.
 
 ---
 
@@ -83,14 +83,14 @@ The buffer is defined by the following three-state machine:
 
 ---
 
-## 4. Transmit Buffering (UART Queue)
+## 4. UART Transmit FIFO
 
-A synchronous transmit queue is instantiated on the UART transmit datapath.
+A synchronous FIFO is instantiated on the UART transmit datapath.
 *   **Properties**: Operates entirely in the system clock domain. Uses read and write pointers one bit wider than the address, with no separate occupancy counter; full and empty are registered flags, one cycle behind the pointers. Depth must be a power of two.
 *   **Read Style**: Registered pop, not first-word fall-through. A single-cycle read request captures the addressed byte into the output register on the next clock edge. The output holds its value until the next accepted pop.
 *   **Behavioral Rules**:
-    *   **Push**: Accepted if the queue is not full, or if full with a concurrent pop. Writes the byte to the write pointer and advances it.
-    *   **Pop**: Accepted if the queue is not empty, or if empty with a concurrent push. Advances the read pointer; if the queue was empty, the pushed byte is forwarded directly to the output instead of being read from memory.
+    *   **Push**: Accepted if the FIFO is not full, or if full with a concurrent pop. Writes the byte to the write pointer and advances it.
+    *   **Pop**: Accepted if the FIFO is not empty, or if empty with a concurrent push. Advances the read pointer; if the FIFO was empty, the pushed byte is forwarded directly to the output instead of being read from memory.
     *   **Safety**: Overflow is prevented except during the full-plus-pop bypass, which leaves occupancy unchanged. Underflow is prevented except during the empty-plus-push bypass, which forwards the byte directly.
 
 ---
@@ -137,7 +137,7 @@ The local address space is divided into 256-byte pages:
 |---|---|---|---|
 | **Page 0** | `0x000` | SPI Master | Controls configuration, transmission, and status of the SPI master core. |
 | **Page 1** | `0x100` | I2C Master | Controls slave addressing, read/write commands, transmission, and status of the I2C master. |
-| **Page 2** | `0x200` | UART Console | Exposes the transmit queue and receive data from the serial console. |
+| **Page 2** | `0x200` | UART Console | Exposes the transmit FIFO and receive data from the serial console. |
 | **Others** | — | Reserved | Unmapped memory region. Returns a decode error response on access. |
 
 The page is selected by address bits `[11:8]` and the register by bits `[7:2]`. Bits `[1:0]` are not used for decoding; sub-word access is expressed through the write strobes.
@@ -146,7 +146,7 @@ The page is selected by address bits `[11:8]` and the register by bits `[7:2]`. 
 
 ## 7. Register Functionality
 
-Each page exposes the following registers. All registers are 32 bits wide and word-aligned. Reserved bits ignore writes and read as zero. Status bits are driven by the associated core or queue and are not host-writable.
+Each page exposes the following registers. All registers are 32 bits wide and word-aligned. Reserved bits ignore writes and read as zero. Status bits are driven by the associated core or FIFO and are not host-writable.
 
 ### 7.1 SPI Master Registers
 Offsets are relative to the SPI page base (`0x000`).
@@ -176,9 +176,9 @@ Offsets are relative to the UART page base (`0x200`).
 
 | Offset | Register | Access | Reset | Bit Fields |
 |---|---|---|---|---|
-| `0x00` | `UART_CTRL` | RW | `0x0` | `[0]` TX_EN — enables the transmit queue to drain into the core. `[1]` RX_EN. |
-| `0x04` | `UART_STATUS` | RO | `0x0` | `[0]` TX_READY — transmit queue not full. `[1]` TX_EMPTY — queue empty and core idle. `[2]` RX_VALID — cleared on `UART_RXDATA` read. `[3]` RX_OVERRUN — sticky; cleared on `UART_RXDATA` read. `[4]` RX_PERR — sticky; cleared on `UART_RXDATA` read. |
-| `0x08` | `UART_TXDATA` | RW | `0x0` | `[7:0]` Transmit byte. Writing pushes into the transmit queue when it is not full. |
+| `0x00` | `UART_CTRL` | RW | `0x0` | `[0]` TX_EN — enables the transmit FIFO to drain into the core. `[1]` RX_EN. |
+| `0x04` | `UART_STATUS` | RO | `0x0` | `[0]` TX_READY — transmit FIFO not full. `[1]` TX_EMPTY — FIFO empty and core idle. `[2]` RX_VALID — cleared on `UART_RXDATA` read. `[3]` RX_OVERRUN — sticky; cleared on `UART_RXDATA` read. `[4]` RX_PERR — sticky; cleared on `UART_RXDATA` read. |
+| `0x08` | `UART_TXDATA` | RW | `0x0` | `[7:0]` Transmit byte. Writing pushes into the transmit FIFO when it is not full. |
 | `0x0C` | `UART_RXDATA` | RO | `0x0` | `[7:0]` Received byte. Reading clears `RX_VALID`, `RX_OVERRUN`, and `RX_PERR`. |
 | `0x10` | `UART_CFG` | RW | `0x0` | `[15:0]` BAUD_DIV — baud rate divider. `[16]` PARITY_EN — 0 = disabled, 1 = enabled. `[17]` PARITY_MODE — 0 = even, 1 = odd. `[18]` STOP_BITS — 0 = one stop bit, 1 = two. |
 
@@ -186,7 +186,7 @@ UART frame data width is fixed at 8 bits, matching `UART_TXDATA`/`UART_RXDATA`.
 
 ---
 
-## 8. Register and Queue Side-Effects
+## 8. Register and FIFO Side-Effects
 
 *   **Self-Clearing Triggers**: Writing to start-transfer controls triggers a transaction and immediately returns to an idle state on subsequent reads.
 *   **Read-to-Clear Flags**: Reading a receive data register automatically clears its corresponding data-valid status flags on the cycle the read transaction completes; UART's sticky `RX_OVERRUN` and `RX_PERR` clear the same way.
@@ -198,9 +198,9 @@ UART frame data width is fixed at 8 bits, matching `UART_TXDATA`/`UART_RXDATA`.
 
 ## 9. Architectural Scope and Limits
 
-To ensure system reliability, the following constraints are enforced:
+The design scope is deliberately bounded by the following simplifications:
 *   **Single-Outstanding Transactions**: The subsystem handles one transaction at a time per interface path; subsequent requests are stalled at the input buffers.
 *   **Single-Byte Transfers**: Serial interfaces are restricted to single-byte transactions. Hardware-level multi-byte streaming is not supported.
 *   **Status Polling**: The subsystem uses status polling exclusively. No interrupt lines are exposed.
-*   **Synchronous Operation**: All control paths are synchronous. The subsystem does not implement asynchronous logic, grey-coding, or meta-stability filters.
+*   **Synchronous Operation**: All control paths are synchronous. The subsystem does not implement asynchronous logic, Gray coding, or metastability filters.
 *   **No I2C Clock Stretching**: `I2C_SCL` is host-driven and push-pull. Slave-side clock stretching is not supported.
